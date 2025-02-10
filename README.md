@@ -81,6 +81,18 @@ For Nuxt 3, just wrap component in `<ClientOnly>`
 </template>
 ```
 
+## Slots
+
+```vue
+<template>
+  <BottomSheet ref="bottomSheet">
+    <template #header> Header </template>
+    <div>Your content</div>
+    <template #footer> Footer </template>
+  </BottomSheet>
+</template>
+```
+
 ## CSS Custom Properties
 
 ```css
@@ -100,6 +112,7 @@ For Nuxt 3, just wrap component in `<ClientOnly>`
 
 | Prop                | Type     | Description                                                                                         | Example                          |
 | ------------------- | -------- | --------------------------------------------------------------------------------------------------- | -------------------------------- |
+| duration            | Number   | Defines the duration open and close animations.                                                     | `:duration="250"`                |
 | snapPoints          | Number[] | Defines custom snapping positions for the bottom sheet                                              | `:snapPoints="[300, 600, 900]"`  |
 | defaultSnapPoint    | Number   | Specifies the default snap point. Note that at least one snapPoint must be specified for it to work | `:default-snap-point="600"`      |
 | blocking            | Boolean  | Controls whether the bottom sheet blocks interactions with underlying content                       | `:blocking="true"`               |
@@ -111,6 +124,7 @@ For Nuxt 3, just wrap component in `<ClientOnly>`
 
 | Prop                | Default                    |
 | ------------------- | -------------------------- |
+| duration            | `250`                      |
 | snapPoints          | `minHeight`                |
 | defaultSnapPoint    | `minHeight / minSnapPoint` |
 | blocking            | `true`                     |
