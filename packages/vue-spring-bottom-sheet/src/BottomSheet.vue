@@ -22,6 +22,14 @@ const props = withDefaults(defineProps<BottomSheetProps>(), {
   teleportDefer: false,
 })
 
+const uniqueId = ref(
+  `vsbs-${
+    typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function'
+      ? crypto.randomUUID()
+      : Math.random().toString(36).substring(2, 9)
+  }`
+);
+
 const emit = defineEmits<{
   (e: 'opened'): void
   (e: 'closed'): void
@@ -512,7 +520,7 @@ defineExpose({ open, close, snapToPoint })
 
 <template>
   <Teleport :to="teleportTo" :defer="teleportDefer">
-    <div data-vsbs-container>
+    <div :data-vsbs-container="uniqueId">
       <AnimatePresence>
         <Motion
           v-if="showSheet && blocking"
