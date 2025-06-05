@@ -24,7 +24,9 @@ const props = withDefaults(defineProps<BottomSheetProps>(), {
 
 const emit = defineEmits<{
   (e: 'opened'): void
+  (e: 'opening-started'): void
   (e: 'closed'): void
+  (e: 'closing-started'): void
   (e: 'ready'): void
   (e: 'dragging-up'): void
   (e: 'dragging-down'): void
@@ -125,8 +127,13 @@ const backdropClick = () => {
   if (props.canBackdropClose) close()
 }
 
+let isOpening = false
 const open = async () => {
+  if (isOpening) return;
+  
   showSheet.value = true
+  isOpening = true
+  emit('opening-started')
 
   if (props.blocking) {
     isWindowScrollLocked.value = true
@@ -194,6 +201,7 @@ const open = async () => {
 
   window.addEventListener('keydown', handleEscapeKey)
 
+  isOpening = false
   if (props.blocking) {
     setTimeout(() => {
       if (heightValue.get() < 1) {
@@ -204,8 +212,13 @@ const open = async () => {
   }
 }
 
+let isClosing = false
 const close = () => {
+  if (isClosing) return
+  
   showSheet.value = false
+  isClosing = true
+  emit('closing-started')
 
   if (props.blocking) {
     isWindowScrollLocked.value = false
@@ -220,6 +233,7 @@ const close = () => {
 
   setTimeout(() => {
     emit('closed')
+    isClosing = false
   }, props.duration)
 }
 

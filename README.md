@@ -159,14 +159,16 @@ Assuming there is `const bottomSheet = ref()`
 
 ## Events
 
-| Event          | Description                            | Payload                 |
-| -------------- | -------------------------------------- | ----------------------- |
-| opened         | Emitted when sheet finishes opening    | -                       |
-| closed         | Emitted when sheet finishes closing    | -                       |
-| dragging-up    | Emitted when user drags sheet upward   | -                       |
-| dragging-down  | Emitted when user drags sheet downward | -                       |
-| instinctHeight | Emitted when content height changes    | height (number)         |
-| snapped        | Emitted when sheet finishes snapping   | snapPointIndex (number) |
+| Event           | Description                            | Payload                 |
+| --------------  | -------------------------------------- | ----------------------- |
+| opened          | Emitted when sheet finishes opening    | -                       |
+| opening-started | Emitted when sheet starts opening      | -                       |
+| closed          | Emitted when sheet finishes closing    | -                       |
+| closing-started | Emitted when sheet starts closing      | -                       |
+| dragging-up     | Emitted when user drags sheet upward   | -                       |
+| dragging-down   | Emitted when user drags sheet downward | -                       |
+| instinctHeight  | Emitted when content height changes    | height (number)         |
+| snapped         | Emitted when sheet finishes snapping   | snapPointIndex (number) |
 
 ## Acknowledgments
 
