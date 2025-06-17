@@ -103,6 +103,11 @@ let controls: any
 const isWindowScrollLocked = useScrollLock(document.body)
 const isWindowRootScrollLocked = useScrollLock(document.documentElement)
 
+watch(() => props.blocking, (value) => {
+  isWindowScrollLocked.value = value
+  isWindowRootScrollLocked.value = value
+})
+
 const focusTrap = useFocusTrap([sheet, backdrop], {
   immediate: false,
   fallbackFocus: () => sheet.value || document.body,
