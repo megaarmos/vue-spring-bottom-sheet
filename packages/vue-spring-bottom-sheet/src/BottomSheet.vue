@@ -187,8 +187,8 @@ const open = async () => {
 
   translateY.value = height.value
 
-  heightValue.set(height.value)
-  translateYValue.set(height.value)
+  heightValue.jump(height.value)
+  translateYValue.jump(height.value)
 
   requestAnimationFrame(() => {
     controls = animate(heightValue, height.value, {
@@ -551,7 +551,7 @@ defineExpose({ open, close, snapToPoint })
           v-if="showSheet"
           ref="sheet"
           :exit="{ y: '100%', height: sheetHeight }"
-          :initial="{ y: '100%' }"
+          :initial="false"
           :style="{ y: translateYValue, height: heightValue }"
           :data-vsbs-shadow="!blocking"
           :data-vsbs-sheet-show="showSheet"
