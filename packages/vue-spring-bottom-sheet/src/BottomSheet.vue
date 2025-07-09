@@ -190,26 +190,27 @@ const open = async () => {
   heightValue.set(height.value)
   translateYValue.set(height.value)
 
-  controls = animate(heightValue, height.value, {
-    duration: props.duration / 1000,
-    ease: 'easeInOut',
-  })
-  controls = animate(translateYValue, 0, {
-    duration: props.duration / 1000,
-    ease: 'easeInOut',
+  requestAnimationFrame(() => {
+    controls = animate(heightValue, height.value, {
+      duration: props.duration / 1000,
+      ease: 'easeInOut',
+    })
+
+    controls = animate(translateYValue, 0, {
+      duration: props.duration / 1000,
+      ease: 'easeInOut',
+      onComplete: () => {
+        if (props.blocking) {
+          emit('opened')
+          focusTrap.activate()
+        }
+      },
+    })
   })
 
   window.addEventListener('keydown', handleEscapeKey)
 
   isOpening = false
-  if (props.blocking) {
-    setTimeout(() => {
-      if (heightValue.get() < 1) {
-        emit('opened')
-        focusTrap.activate()
-      }
-    }, props.duration)
-  }
 }
 
 let isClosing = false
@@ -367,7 +368,9 @@ const handleContentPanStart = (_: PointerEvent, info: PanInfo) => {
   height.value = sheetHeight.value
   translateY.value = translateYValue.get()
 
-  controls.stop()
+  if (controls) {
+    controls.stop()
+  }
 
   if (!sheetScroll.value) return
 
