@@ -187,29 +187,30 @@ const open = async () => {
 
   translateY.value = height.value
 
-  heightValue.set(height.value)
-  translateYValue.set(height.value)
+  heightValue.jump(height.value)
+  translateYValue.jump(height.value)
 
-  controls = animate(heightValue, height.value, {
-    duration: props.duration / 1000,
-    ease: 'easeInOut',
-  })
-  controls = animate(translateYValue, 0, {
-    duration: props.duration / 1000,
-    ease: 'easeInOut',
+  requestAnimationFrame(() => {
+    controls = animate(heightValue, height.value, {
+      duration: props.duration / 1000,
+      ease: 'easeInOut',
+    })
+
+    controls = animate(translateYValue, 0, {
+      duration: props.duration / 1000,
+      ease: 'easeInOut',
+      onComplete: () => {
+        if (props.blocking) {
+          emit('opened')
+          focusTrap.activate()
+        }
+      },
+    })
   })
 
   window.addEventListener('keydown', handleEscapeKey)
 
   isOpening = false
-  if (props.blocking) {
-    setTimeout(() => {
-      if (heightValue.get() < 1) {
-        emit('opened')
-        focusTrap.activate()
-      }
-    }, props.duration)
-  }
 }
 
 let isClosing = false
@@ -367,7 +368,9 @@ const handleContentPanStart = (_: PointerEvent, info: PanInfo) => {
   height.value = sheetHeight.value
   translateY.value = translateYValue.get()
 
-  controls.stop()
+  if (controls) {
+    controls.stop()
+  }
 
   if (!sheetScroll.value) return
 
@@ -548,7 +551,7 @@ defineExpose({ open, close, snapToPoint })
           v-if="showSheet"
           ref="sheet"
           :exit="{ y: '100%', height: sheetHeight }"
-          :initial="{ y: '100%' }"
+          :initial="false"
           :style="{ y: translateYValue, height: heightValue }"
           :data-vsbs-shadow="!blocking"
           :data-vsbs-sheet-show="showSheet"
