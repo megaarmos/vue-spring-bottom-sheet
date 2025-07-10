@@ -1,3 +1,11 @@
+## [2.4.1](https://github.com/megaarmos/vue-spring-bottom-sheet/compare/v2.4.0...v2.4.1) (2025-07-10)
+
+
+### Bug Fixes
+
+* compatiblity with motion-v 1.5.0 ([22358ff](https://github.com/megaarmos/vue-spring-bottom-sheet/commit/22358ff15ac5c77d71b2aa0e1663c7fc56cd076b))
+* remove initial y state to fix the first instance not working ([8445925](https://github.com/megaarmos/vue-spring-bottom-sheet/commit/8445925fb1f4e711eea51decb24920a6bc5d8d74))
+
 # [2.4.0](https://github.com/megaarmos/vue-spring-bottom-sheet/compare/v2.3.0...v2.4.0) (2025-06-09)
 
 
