@@ -105,7 +105,7 @@ const isWindowRootScrollLocked = useScrollLock(document.documentElement)
 
 const focusTrap = useFocusTrap([sheet, backdrop], {
   immediate: false,
-  fallbackFocus: () => sheet.value || document.body,
+  fallbackFocus: () => sheet.value?.$el || document.body,
 })
 
 function handleTouchMove(event: TouchEvent) {
