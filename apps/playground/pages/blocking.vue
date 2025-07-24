@@ -6,7 +6,6 @@ import '../../../packages/vue-spring-bottom-sheet/dist/style.css'
 
 const bottomSheet = ref<InstanceType<typeof BottomSheet>>()
 const open = ref(false)
-const maxHeight = ref(0)
 
 const toggle = () => {
   open.value = !open.value
