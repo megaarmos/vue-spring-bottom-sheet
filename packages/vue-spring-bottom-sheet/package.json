@@ -32,7 +32,7 @@
     "url": "https://github.com/megaarmos/vue-spring-bottom-sheet/issues"
   },
   "private": false,
-  "version": "2.4.2",
+  "version": "2.4.3",
   "type": "module",
   "exports": {
     ".": {
