@@ -316,11 +316,27 @@ const handlePan = async (_: PointerEvent, info: PanInfo) => {
 }
 
 const handlePanEnd = () => {
-  translateY.value = props.canSwipeClose
-    ? [0, height.value].reduce((prev, curr) =>
-        Math.abs(curr - translateY.value) < Math.abs(prev - translateY.value) ? curr : prev,
-      )
-    : 0
+  if (props.canSwipeClose) {
+    let threshold = height.value / 2
+
+    if (props.swipeCloseThreshold && typeof props.swipeCloseThreshold === 'number') {
+      threshold = props.swipeCloseThreshold
+    }
+
+    if (
+      props.swipeCloseThreshold &&
+      typeof props.swipeCloseThreshold === 'string' &&
+      props.swipeCloseThreshold.includes('%')
+    ) {
+      threshold = height.value * (Number(props.swipeCloseThreshold.replace('%', '')) / 100)
+    }
+
+    if (translateY.value > threshold) {
+      translateY.value = height.value
+    }
+  } else {
+    translateY.value = 0
+  }
 
   controls = animate(translateYValue, translateY.value, {
     duration: props.duration / 1000,
