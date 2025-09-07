@@ -1,3 +1,10 @@
+# [2.5.0](https://github.com/megaarmos/vue-spring-bottom-sheet/compare/v2.4.3...v2.5.0) (2025-09-07)
+
+
+### Features
+
+* swipe close threshold ([#35](https://github.com/megaarmos/vue-spring-bottom-sheet/issues/35)) ([3d553b5](https://github.com/megaarmos/vue-spring-bottom-sheet/commit/3d553b5e1c1779a326a1730b3ab26b864ca07b5b))
+
 ## [2.4.3](https://github.com/megaarmos/vue-spring-bottom-sheet/compare/v2.4.2...v2.4.3) (2025-08-15)
 
 
