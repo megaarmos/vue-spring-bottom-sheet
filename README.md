@@ -132,20 +132,21 @@ For Nuxt 3, just wrap component in `<ClientOnly>`
 
 ### Prop Definitions
 
-| Prop                | Type                      | Default          | Description                                    |
-| ------------------- | ------------------------- | ---------------- | ---------------------------------------------- |
-| duration            | Number                    | 250              | Animation duration in milliseconds             |
-| snapPoints          | Array<number\|string>     | [instinctHeight] | Custom snapping positions                      |
-| initialSnapPoint    | Number                    | minHeight        | Initial snap point index                       |
-| blocking            | Boolean                   | true             | Block interactions with underlying content     |
-| canSwipeClose       | Boolean                   | true             | Enable swipe-to-close gesture                  |
-| canBackdropClose    | Boolean                   | true             | Allow closing by tapping backdrop              |
-| expandOnContentDrag | Boolean                   | true             | Enable expanding by dragging content           |
-| teleprtTo           | String \| RendererElement | body             | Teleport to a specific element                 |
-| teleportDefer       | Boolean                   | false            | Defer teleporting until opened (Vue 3.5+ only) |
-| headerClass         | String                    | ''               | Set header element class                       |
-| contentClass        | String                    | ''               | Set content element class                      |
-| footerClass         | String                    | ''               | Set footer element class                       |
+| Prop                | Type                      | Default          | Description                                                               |
+| ------------------- | ------------------------- | ---------------- | ------------------------------------------------------------------------- |
+| duration            | Number                    | 250              | Animation duration in milliseconds                                        |
+| snapPoints          | Array<number\|string>     | [instinctHeight] | Custom snapping positions                                                 |
+| initialSnapPoint    | Number                    | minHeight        | Initial snap point index                                                  |
+| blocking            | Boolean                   | true             | Block interactions with underlying content                                |
+| canSwipeClose       | Boolean                   | true             | Enable swipe-to-close gesture                                             |
+| swipeCloseThreshold | Number\|String            | "50%"            | The amount of translation (in px or %) after which the element will close |
+| canBackdropClose    | Boolean                   | true             | Allow closing by tapping backdrop                                         |
+| expandOnContentDrag | Boolean                   | true             | Enable expanding by dragging content                                      |
+| teleportTo          | String \| RendererElement | body             | Teleport to a specific element                                            |
+| teleportDefer       | Boolean                   | false            | Defer teleporting until opened (Vue 3.5+ only)                            |
+| headerClass         | String                    | ''               | Set header element class                                                  |
+| contentClass        | String                    | ''               | Set content element class                                                 |
+| footerClass         | String                    | ''               | Set footer element class                                                  |
 
 ## Exposed methods
 
@@ -160,7 +161,7 @@ Assuming there is `const bottomSheet = ref()`
 ## Events
 
 | Event           | Description                            | Payload                 |
-| --------------  | -------------------------------------- | ----------------------- |
+| --------------- | -------------------------------------- | ----------------------- |
 | opened          | Emitted when sheet finishes opening    | -                       |
 | opening-started | Emitted when sheet starts opening      | -                       |
 | closed          | Emitted when sheet finishes closing    | -                       |

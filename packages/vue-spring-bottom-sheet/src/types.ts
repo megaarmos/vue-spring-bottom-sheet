@@ -6,6 +6,7 @@ export interface BottomSheetProps {
   initialSnapPoint?: number
   blocking?: boolean
   canSwipeClose?: boolean
+  swipeCloseThreshold?: string | number
   canBackdropClose?: boolean
   expandOnContentDrag?: boolean
   modelValue?: boolean
