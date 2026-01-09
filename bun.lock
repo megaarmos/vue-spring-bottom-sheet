@@ -1,5 +1,6 @@
 {
   "lockfileVersion": 1,
+  "configVersion": 0,
   "workspaces": {
     "": {
       "name": "vue-spring-bottom-sheet-monorepo",
@@ -30,7 +31,7 @@
     },
     "packages/vue-spring-bottom-sheet": {
       "name": "@douxcode/vue-spring-bottom-sheet",
-      "version": "2.4.0",
+      "version": "2.5.0",
       "dependencies": {
         "@vueuse/core": "^13.2.0",
         "@vueuse/integrations": "^13.2.0",

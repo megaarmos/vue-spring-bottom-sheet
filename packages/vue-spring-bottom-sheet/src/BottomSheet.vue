@@ -1,9 +1,6 @@
 <script setup lang="ts">
 import type { BottomSheetProps } from './types'
 
-import { Motion, AnimatePresence, useMotionValue, animate } from 'motion-v'
-import type { PanInfo } from 'motion-v'
-
 import { computed, nextTick, onUnmounted, ref, toRefs, watch, onMounted } from 'vue'
 import { useElementBounding, useScrollLock, useVModel, useWindowSize } from '@vueuse/core'
 import { useFocusTrap } from '@vueuse/integrations/useFocusTrap'
@@ -51,7 +48,7 @@ onMounted(() => {
   }
 })
 
-const sheet = ref()
+const sheet = ref<HTMLElement | null>(null)
 const sheetHeader = ref<HTMLElement | null>(null)
 const sheetFooter = ref<HTMLElement | null>(null)
 const sheetScroll = ref<HTMLElement | null>(null)
@@ -84,8 +81,7 @@ const instinctHeight = computed({
 const height = ref(0)
 const translateY = ref(0)
 
-const heightValue = useMotionValue(0)
-const translateYValue = useMotionValue(0)
+const durationCss = computed(() => props.duration + 'ms')
 
 const { snapPoints: propSnapPoints } = toRefs(props)
 const snapPointsRef = computed(() => propSnapPoints.value ?? [instinctHeight.value])
@@ -97,15 +93,20 @@ const {
   maxSnapPoint,
 } = useSnapPoints(snapPointsRef, height, windowHeight)
 
-// eslint-disable-next-line
-let controls: any
-
 const isWindowScrollLocked = useScrollLock(document.body)
 const isWindowRootScrollLocked = useScrollLock(document.documentElement)
 
+// Drag state
+const isDragging = ref(false)
+const dragStartY = ref(0)
+const dragStartHeight = ref(0)
+const dragStartTranslateY = ref(0)
+const lastDragY = ref(0)
+const isFirstContentMove = ref(true)
+
 const focusTrap = useFocusTrap([sheet, backdrop], {
   immediate: false,
-  fallbackFocus: () => sheet.value?.$el || document.body,
+  fallbackFocus: () => sheet.value || document.body,
 })
 
 function handleTouchMove(event: TouchEvent) {
@@ -142,7 +143,7 @@ const open = async () => {
 
   await nextTick()
 
-  const sheetElement = sheet.value.$el as HTMLElement
+  const sheetElement = sheet.value as HTMLElement
   sheetHeight.value = sheetElement.getBoundingClientRect().height
 
   const sheetContentElement = sheetElement.querySelector('[data-vsbs-content]') as HTMLElement
@@ -185,27 +186,21 @@ const open = async () => {
     })
   }
 
+  // Start from off-screen
   translateY.value = height.value
 
-  heightValue.jump(height.value)
-  translateYValue.jump(height.value)
-
+  // Animate open on next frame
   requestAnimationFrame(() => {
-    controls = animate(heightValue, height.value, {
-      duration: props.duration / 1000,
-      ease: 'easeInOut',
-    })
+    translateY.value = 0
 
-    controls = animate(translateYValue, 0, {
-      duration: props.duration / 1000,
-      ease: 'easeInOut',
-      onComplete: () => {
-        if (props.blocking) {
+    if (props.blocking) {
+      setTimeout(() => {
+        if (showSheet.value) {
           emit('opened')
           focusTrap.activate()
         }
-      },
-    })
+      }, props.duration)
+    }
   })
 
   window.addEventListener('keydown', handleEscapeKey)
@@ -231,6 +226,9 @@ const close = () => {
   if (props.blocking) {
     focusTrap.deactivate()
   }
+
+  // Animate close
+  translateY.value = height.value
 
   setTimeout(() => {
     emit('closed')
@@ -258,12 +256,7 @@ const snapToPoint = (index: number) => {
   }
 
   height.value = snapPoint
-
-  controls = animate(heightValue, height.value, {
-    duration: props.duration / 1000,
-    ease: 'easeInOut',
-    onComplete: () => emit('snapped', snapPointsRef.value.indexOf(snapPointsRef.value[index])),
-  })
+  emit('snapped', snapPointsRef.value.indexOf(snapPointsRef.value[index]))
 }
 
 function emitDragDirection(deltaY: number) {
@@ -274,48 +267,67 @@ function emitDragDirection(deltaY: number) {
   }
 }
 
-const handlePanStart = () => {
-  height.value = sheetHeight.value
-  translateY.value = translateYValue.get()
-
-  heightValue.jump(height.value)
-  translateYValue.jump(translateY.value)
-}
-
-const handlePan = async (_: PointerEvent, info: PanInfo) => {
-  await nextTick()
-
+const handlePanStart = (event: PointerEvent) => {
   if (!sheet.value) return
 
+  // Capture current animated state via getComputedStyle
+  const style = window.getComputedStyle(sheet.value)
+  const currentHeight = parseFloat(style.height)
+  let currentTranslateY = 0
+
+  if (style.transform && style.transform !== 'none') {
+    const matrix = new DOMMatrix(style.transform)
+    currentTranslateY = matrix.m42
+  }
+
+  height.value = currentHeight
+  translateY.value = currentTranslateY
+
+  isDragging.value = true
+  dragStartY.value = event.clientY
+  dragStartHeight.value = height.value
+  dragStartTranslateY.value = translateY.value
+  lastDragY.value = event.clientY
+  ;(event.target as HTMLElement).setPointerCapture(event.pointerId)
+}
+
+const handlePan = (event: PointerEvent) => {
+  if (!isDragging.value) return
+
+  const deltaY = event.clientY - dragStartY.value
+  const currentY = event.clientY
+
   if (translateY.value <= 0) {
-    height.value -= info.delta.y
+    height.value = dragStartHeight.value - deltaY
   }
 
   if (height.value <= minSnapPoint.value) {
     height.value = minSnapPoint.value
+    translateY.value = dragStartTranslateY.value + deltaY
 
-    translateY.value += info.delta.y
-
-    translateYValue.set(
-      props.canSwipeClose
-        ? clamp(translateY.value, { min: 0 })
-        : clamp(rubberbandIfOutOfBounds(translateY.value, -sheetHeight.value, 0, 0.5), {
-            min: 0,
-          }),
-    )
+    if (props.canSwipeClose) {
+      translateY.value = clamp(translateY.value, { min: 0 })
+    } else {
+      translateY.value = clamp(
+        rubberbandIfOutOfBounds(translateY.value, -sheetHeight.value, 0, 0.5),
+        { min: 0 },
+      )
+    }
   }
 
-  heightValue.set(
-    clamp(rubberbandIfOutOfBounds(height.value, 0, maxSnapPoint.value, 0.25), {
-      min: 0,
-      max: windowHeight.value,
-    }),
-  )
+  height.value = clamp(rubberbandIfOutOfBounds(height.value, 0, maxSnapPoint.value, 0.25), {
+    min: 0,
+    max: windowHeight.value,
+  })
 
-  emitDragDirection(info.delta.y)
+  emitDragDirection(event.clientY - lastDragY.value)
+  lastDragY.value = currentY
 }
 
-const handlePanEnd = () => {
+const handlePanEnd = (event: PointerEvent) => {
+  isDragging.value = false
+  ;(event.target as HTMLElement).releasePointerCapture(event.pointerId)
+
   if (props.canSwipeClose) {
     let threshold = height.value / 2
 
@@ -333,20 +345,17 @@ const handlePanEnd = () => {
 
     if (translateY.value > threshold) {
       translateY.value = height.value
+      close()
+      return
     }
   } else {
     translateY.value = 0
   }
 
-  controls = animate(translateYValue, translateY.value, {
-    duration: props.duration / 1000,
-    ease: 'easeInOut',
-  })
-
   if (translateY.value === height.value) {
     translateY.value = 0
-
     close()
+    return
   }
 
   currentSnapPointIndex.value = closestSnapPointIndex.value
@@ -363,37 +372,27 @@ const handlePanEnd = () => {
     )
   }
 
-  height.value = snapPoint
-
-  controls = animate(heightValue, height.value, {
-    duration: props.duration / 1000,
-    ease: 'easeInOut',
-    onComplete: () =>
-      emit(
-        'snapped',
-        snapPointsRef.value.indexOf(snapPointsRef.value[closestSnapPointIndex.value]),
-      ),
-  })
-  controls = animate(translateYValue, 0, {
-    duration: props.duration / 1000,
-    ease: 'easeInOut',
-  })
-}
-
-const handleContentPanStart = (_: PointerEvent, info: PanInfo) => {
-  height.value = sheetHeight.value
-  translateY.value = translateYValue.get()
-
-  if (controls) {
-    controls.stop()
+  if (snapPoint === 0) {
+    close()
+    return
   }
 
+  height.value = snapPoint
+  translateY.value = 0
+
+  emit('snapped', snapPointsRef.value.indexOf(snapPointsRef.value[closestSnapPointIndex.value]))
+}
+
+// Content pan start logic - deferred to first move because pointerdown has no delta
+const handleContentPanStartLogic = (deltaY: number) => {
   if (!sheetScroll.value) return
 
   const isScrollAtTop = sheetScroll.value.scrollTop === 0
-  const isDraggingDown = info.delta.y > 0
+  const isDraggingDown = deltaY > 0
   const hasSingleSnapPoint = flattenedSnapPoints.value.length === 1
   const isAtTheTop = 0.5 > Math.abs(height.value - maxSnapPoint.value)
+
+  console.log(deltaY)
 
   if (hasSingleSnapPoint) {
     if (!props.expandOnContentDrag) {
@@ -401,10 +400,10 @@ const handleContentPanStart = (_: PointerEvent, info: PanInfo) => {
       return
     }
 
-    if (translateYValue.get() === 0 && isScrollAtTop && isDraggingDown) {
+    if (translateY.value === 0 && isScrollAtTop && isDraggingDown) {
       preventContentScroll.value = true
     }
-    if (translateYValue.get() === 0 && isScrollAtTop && !isDraggingDown) {
+    if (translateY.value === 0 && isScrollAtTop && !isDraggingDown) {
       preventContentScroll.value = false
     }
   } else {
@@ -428,36 +427,70 @@ const handleContentPanStart = (_: PointerEvent, info: PanInfo) => {
   }
 }
 
-const handleContentPan = async (_: PointerEvent, info: PanInfo) => {
-  await nextTick()
+const handleContentPanStart = (event: PointerEvent) => {
+  if (!sheet.value) return
+
+  // Capture current animated state
+  const style = window.getComputedStyle(sheet.value)
+  const currentHeight = parseFloat(style.height)
+  let currentTranslateY = 0
+
+  if (style.transform && style.transform !== 'none') {
+    const matrix = new DOMMatrix(style.transform)
+    currentTranslateY = matrix.m42
+  }
+
+  height.value = currentHeight
+  translateY.value = currentTranslateY
+
+  isDragging.value = true
+  dragStartY.value = event.clientY
+  dragStartHeight.value = height.value
+  dragStartTranslateY.value = translateY.value
+  lastDragY.value = event.clientY
+  isFirstContentMove.value = true
+  ;(event.target as HTMLElement).setPointerCapture(event.pointerId)
+}
+
+const handleContentPan = (event: PointerEvent) => {
+  if (!isDragging.value) return
 
   if (!props.expandOnContentDrag) {
     preventContentScroll.value = false
     return
   }
 
-  if (!sheet.value) return
+  const deltaY = event.clientY - dragStartY.value
+  const currentY = event.clientY
+  const moveDelta = event.clientY - lastDragY.value
+
+  // On first move, handle deferred pan start logic with delta
+  if (isFirstContentMove.value) {
+    isFirstContentMove.value = false
+    handleContentPanStartLogic(moveDelta)
+  }
 
   if (translateY.value === 0 && preventContentScroll.value && props.expandOnContentDrag) {
-    height.value -= info.delta.y
+    height.value = dragStartHeight.value - deltaY
   }
 
   if (height.value <= minSnapPoint.value) {
     height.value = minSnapPoint.value
 
     if (preventContentScroll.value && props.expandOnContentDrag) {
-      translateY.value += info.delta.y
+      translateY.value = dragStartTranslateY.value + deltaY
     }
 
     translateY.value = clamp(translateY.value, { min: 0, max: minSnapPoint.value })
 
-    translateYValue.set(
-      props.canSwipeClose
-        ? clamp(translateY.value, { min: 0 })
-        : clamp(rubberbandIfOutOfBounds(translateY.value, -sheetHeight.value, 0, 0.5), {
-            min: 0,
-          }),
-    )
+    if (props.canSwipeClose) {
+      translateY.value = clamp(translateY.value, { min: 0 })
+    } else {
+      translateY.value = clamp(
+        rubberbandIfOutOfBounds(translateY.value, -sheetHeight.value, 0, 0.5),
+        { min: 0 },
+      )
+    }
   }
 
   if (height.value > maxSnapPoint.value) {
@@ -473,9 +506,69 @@ const handleContentPan = async (_: PointerEvent, info: PanInfo) => {
     }
   }
 
-  heightValue.set(height.value)
+  emitDragDirection(moveDelta)
+  lastDragY.value = currentY
+}
 
-  emitDragDirection(info.delta.y)
+const handleContentPanEnd = (event: PointerEvent) => {
+  isDragging.value = false
+  isFirstContentMove.value = true
+  ;(event.target as HTMLElement).releasePointerCapture(event.pointerId)
+
+  // Same end logic as header/footer
+  if (props.canSwipeClose) {
+    let threshold = height.value / 2
+
+    if (props.swipeCloseThreshold && typeof props.swipeCloseThreshold === 'number') {
+      threshold = props.swipeCloseThreshold
+    }
+
+    if (
+      props.swipeCloseThreshold &&
+      typeof props.swipeCloseThreshold === 'string' &&
+      props.swipeCloseThreshold.includes('%')
+    ) {
+      threshold = height.value * (Number(props.swipeCloseThreshold.replace('%', '')) / 100)
+    }
+
+    if (translateY.value > threshold) {
+      translateY.value = height.value
+      close()
+      return
+    }
+  } else {
+    translateY.value = 0
+  }
+
+  if (translateY.value === height.value) {
+    translateY.value = 0
+    close()
+    return
+  }
+
+  currentSnapPointIndex.value = closestSnapPointIndex.value
+
+  let snapPoint
+  if (typeof snapPointsRef.value[closestSnapPointIndex.value] === 'number') {
+    snapPoint = clamp(snapPointsRef.value[closestSnapPointIndex.value] as number, {
+      max: windowHeight.value,
+    })
+  } else {
+    snapPoint = heightPercentToPixels(
+      snapPointsRef.value[closestSnapPointIndex.value] as string,
+      windowHeight.value,
+    )
+  }
+
+  if (snapPoint === 0) {
+    close()
+    return
+  }
+
+  height.value = snapPoint
+  translateY.value = 0
+
+  emit('snapped', snapPointsRef.value.indexOf(snapPointsRef.value[closestSnapPointIndex.value]))
 }
 
 const touchStart = () => {
@@ -520,12 +613,6 @@ watch(snapPointsRef, (value, oldValue) => {
   height.value = clamp(currentSnapPoint, {
     max: windowHeight.value,
   })
-  if (currentSnapPoint !== previousSnapPoint) {
-    controls = animate(heightValue, height.value, {
-      duration: props.duration / 1000,
-      ease: 'easeInOut',
-    })
-  }
 })
 
 watch(windowHeight, () => {
@@ -540,35 +627,39 @@ onUnmounted(() => {
   focusTrap.deactivate()
 })
 
+// Handle leave transition
+const onLeave = (el: Element) => {
+  const element = el as HTMLElement
+  element.style.transition = `transform ${props.duration}ms ease, height ${props.duration}ms ease`
+  element.style.transform = `translateY(${height.value}px)`
+}
+
 defineExpose({ open, close, snapToPoint })
 </script>
 
 <template>
   <Teleport :to="teleportTo" :defer="teleportDefer">
     <div data-vsbs-container>
-      <AnimatePresence>
-        <Motion
+      <Transition name="vsbs-backdrop">
+        <div
           v-if="showSheet && blocking"
           ref="backdrop"
           data-vsbs-backdrop
           @click="backdropClick()"
-          :transition="{
-            ease: 'easeInOut',
-            duration: duration / 1000,
-          }"
-          :initial="{ opacity: 0 }"
-          :animate="{ opacity: 1 }"
-          :exit="{ opacity: 0 }"
         />
-      </AnimatePresence>
+      </Transition>
 
-      <AnimatePresence>
-        <Motion
+      <Transition name="vsbs-sheet" @leave="onLeave">
+        <div
           v-if="showSheet"
           ref="sheet"
-          :exit="{ y: '100%', height: sheetHeight }"
-          :initial="false"
-          :style="{ y: translateYValue, height: heightValue }"
+          :style="{
+            transform: `translateY(${translateY}px)`,
+            height: `${height}px`,
+            transition: isDragging
+              ? 'none'
+              : `transform ${duration}ms ease, height ${duration}ms ease`,
+          }"
           :data-vsbs-shadow="!blocking"
           :data-vsbs-sheet-show="showSheet"
           aria-modal="true"
@@ -577,44 +668,50 @@ defineExpose({ open, close, snapToPoint })
           @touchstart="touchStart"
           @touchend="touchEnd"
         >
-          <Motion
+          <div
             ref="sheetHeader"
             data-vsbs-header
-            @pan-start="handlePanStart"
-            @pan="handlePan"
-            @pan-end="handlePanEnd"
+            @pointerdown="handlePanStart"
+            @pointermove="handlePan"
+            @pointerup="handlePanEnd"
+            @pointercancel="handlePanEnd"
             @touchmove="handleTouchMove"
             :class="headerClass"
+            style="touch-action: none"
           >
             <slot name="header" />
-          </Motion>
+          </div>
           <div ref="sheetScroll" data-vsbs-scroll @scrollend="scrollEnd">
-            <Motion
+            <div
               ref="sheetContentWrapper"
               data-vsbs-content-wrapper
-              @pan-start="handleContentPanStart"
-              @pan="handleContentPan"
-              @pan-end="handlePanEnd"
+              @pointerdown="handleContentPanStart"
+              @pointermove="handleContentPan"
+              @pointerup="handleContentPanEnd"
+              @pointercancel="handleContentPanEnd"
               @touchmove="handleSheetScroll"
+              :style="{ touchAction: 'pan-y' }"
             >
               <div ref="sheetContent" data-vsbs-content :class="contentClass">
                 <slot />
               </div>
-            </Motion>
+            </div>
           </div>
-          <Motion
+          <div
             ref="sheetFooter"
             data-vsbs-footer
-            @pan-start="handlePanStart"
-            @pan="handlePan"
-            @pan-end="handlePanEnd"
+            @pointerdown="handlePanStart"
+            @pointermove="handlePan"
+            @pointerup="handlePanEnd"
+            @pointercancel="handlePanEnd"
             @touchmove="handleTouchMove"
             :class="footerClass"
+            style="touch-action: none"
           >
             <slot name="footer" />
-          </Motion>
-        </Motion>
-      </AnimatePresence>
+          </div>
+        </div>
+      </Transition>
     </div>
   </Teleport>
 </template>
@@ -637,6 +734,8 @@ defineExpose({ open, close, snapToPoint })
   user-select: none;
   will-change: opacity;
   z-index: 1;
+
+  --vsbs-duration: v-bind(durationCss);
 }
 
 [data-vsbs-shadow='true']::before {
@@ -670,7 +769,7 @@ defineExpose({ open, close, snapToPoint })
   position: fixed;
   right: 0;
   width: 100%;
-  will-change: height;
+  will-change: height, transform;
   z-index: 2;
 }
 
@@ -735,5 +834,15 @@ defineExpose({ open, close, snapToPoint })
   display: grid;
   padding: 8px var(--vsbs-padding-x, 16px);
   user-select: none;
+}
+
+.vsbs-backdrop-enter-active,
+.vsbs-backdrop-leave-active {
+  transition: opacity var(--vsbs-duration) ease;
+}
+
+.vsbs-backdrop-enter-from,
+.vsbs-backdrop-leave-to {
+  opacity: 0;
 }
 </style>
