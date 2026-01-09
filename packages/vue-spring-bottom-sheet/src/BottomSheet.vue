@@ -464,10 +464,19 @@ const handleContentPan = (event: PointerEvent) => {
   const currentY = event.clientY
   const moveDelta = event.clientY - lastDragY.value
 
-  // On first move, handle deferred pan start logic with delta
+  // On first move, use total delta from drag start with threshold
+  // to avoid 0 delta issue on touch devices
   if (isFirstContentMove.value) {
-    isFirstContentMove.value = false
-    handleContentPanStartLogic(moveDelta)
+    const totalDelta = event.clientY - dragStartY.value
+    // Only decide direction when movement is meaningful (> 3px)
+    if (Math.abs(totalDelta) > 3) {
+      isFirstContentMove.value = false
+      handleContentPanStartLogic(totalDelta)
+    } else {
+      // Not enough movement yet, wait for next event
+      lastDragY.value = currentY
+      return
+    }
   }
 
   if (translateY.value === 0 && preventContentScroll.value && props.expandOnContentDrag) {
@@ -515,7 +524,6 @@ const handleContentPanEnd = (event: PointerEvent) => {
   isFirstContentMove.value = true
   ;(event.target as HTMLElement).releasePointerCapture(event.pointerId)
 
-  // Same end logic as header/footer
   if (props.canSwipeClose) {
     let threshold = height.value / 2
 
