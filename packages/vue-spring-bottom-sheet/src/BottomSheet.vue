@@ -5,6 +5,7 @@ import { computed, nextTick, onUnmounted, ref, toRefs, watch, onMounted } from '
 import { useElementBounding, useScrollLock, useVModel, useWindowSize } from '@vueuse/core'
 import { useFocusTrap } from '@vueuse/integrations/useFocusTrap'
 import { useSnapPoints } from './composables/useSnapPoints'
+import { useSwipeDetection } from './composables/useSwipeDetection'
 import { clamp, funnel } from 'remeda'
 import { rubberbandIfOutOfBounds } from './utils/rubberbandIfOutOfBounds'
 import { heightPercentToPixels } from './utils/heightPercentToPixels'
@@ -96,13 +97,14 @@ const {
 const isWindowScrollLocked = useScrollLock(document.body)
 const isWindowRootScrollLocked = useScrollLock(document.documentElement)
 
-// Drag state
 const isDragging = ref(false)
 const dragStartY = ref(0)
 const dragStartHeight = ref(0)
 const dragStartTranslateY = ref(0)
 const lastDragY = ref(0)
 const isFirstContentMove = ref(true)
+
+const swipe = useSwipeDetection({ velocityThreshold: 0.5 })
 
 const focusTrap = useFocusTrap([sheet, backdrop], {
   immediate: false,
@@ -288,6 +290,8 @@ const handlePanStart = (event: PointerEvent) => {
   dragStartHeight.value = height.value
   dragStartTranslateY.value = translateY.value
   lastDragY.value = event.clientY
+
+  swipe.start(event.clientY)
   ;(event.target as HTMLElement).setPointerCapture(event.pointerId)
 }
 
@@ -321,6 +325,7 @@ const handlePan = (event: PointerEvent) => {
   })
 
   emitDragDirection(event.clientY - lastDragY.value)
+  swipe.update(event.clientY)
   lastDragY.value = currentY
 }
 
@@ -358,16 +363,57 @@ const handlePanEnd = (event: PointerEvent) => {
     return
   }
 
-  currentSnapPointIndex.value = closestSnapPointIndex.value
+  // Get swipe result for direction-based snapping
+  const swipeResult = swipe.end()
+
+  // Fast swipe down to close - when at or near min snap point
+  if (
+    swipeResult.isSwipe &&
+    swipeResult.direction === 'down' &&
+    props.canSwipeClose &&
+    height.value <= minSnapPoint.value + 10
+  ) {
+    translateY.value = height.value
+    close()
+    return
+  }
+
+  let targetSnapIndex: number
+
+  if (swipeResult.isSwipe && flattenedSnapPoints.value.length > 1) {
+    // Fast swipe - snap based on direction
+    const sortedSnapPoints = [...flattenedSnapPoints.value].sort((a, b) => a - b)
+
+    if (swipeResult.direction === 'up') {
+      // Find next higher snap point
+      const nextHigher = sortedSnapPoints.find((p) => p > height.value + 1)
+      targetSnapIndex =
+        nextHigher !== undefined
+          ? flattenedSnapPoints.value.indexOf(nextHigher)
+          : closestSnapPointIndex.value
+    } else {
+      // Find next lower snap point
+      const nextLower = [...sortedSnapPoints].reverse().find((p) => p < height.value - 1)
+      targetSnapIndex =
+        nextLower !== undefined
+          ? flattenedSnapPoints.value.indexOf(nextLower)
+          : closestSnapPointIndex.value
+    }
+  } else {
+    // Slow drag - use closest snap point (existing behavior)
+    targetSnapIndex = closestSnapPointIndex.value
+  }
+
+  currentSnapPointIndex.value = targetSnapIndex
 
   let snapPoint
-  if (typeof snapPointsRef.value[closestSnapPointIndex.value] === 'number') {
-    snapPoint = clamp(snapPointsRef.value[closestSnapPointIndex.value] as number, {
+  if (typeof snapPointsRef.value[targetSnapIndex] === 'number') {
+    snapPoint = clamp(snapPointsRef.value[targetSnapIndex] as number, {
       max: windowHeight.value,
     })
   } else {
     snapPoint = heightPercentToPixels(
-      snapPointsRef.value[closestSnapPointIndex.value] as string,
+      snapPointsRef.value[targetSnapIndex] as string,
       windowHeight.value,
     )
   }
@@ -380,7 +426,7 @@ const handlePanEnd = (event: PointerEvent) => {
   height.value = snapPoint
   translateY.value = 0
 
-  emit('snapped', snapPointsRef.value.indexOf(snapPointsRef.value[closestSnapPointIndex.value]))
+  emit('snapped', snapPointsRef.value.indexOf(snapPointsRef.value[targetSnapIndex]))
 }
 
 // Content pan start logic - deferred to first move because pointerdown has no delta
@@ -449,6 +495,8 @@ const handleContentPanStart = (event: PointerEvent) => {
   dragStartTranslateY.value = translateY.value
   lastDragY.value = event.clientY
   isFirstContentMove.value = true
+
+  swipe.start(event.clientY)
   ;(event.target as HTMLElement).setPointerCapture(event.pointerId)
 }
 
@@ -516,6 +564,7 @@ const handleContentPan = (event: PointerEvent) => {
   }
 
   emitDragDirection(moveDelta)
+  swipe.update(event.clientY)
   lastDragY.value = currentY
 }
 
@@ -554,16 +603,57 @@ const handleContentPanEnd = (event: PointerEvent) => {
     return
   }
 
-  currentSnapPointIndex.value = closestSnapPointIndex.value
+  // Get swipe result for direction-based snapping
+  const swipeResult = swipe.end()
+
+  // Fast swipe down to close - when at or near min snap point
+  if (
+    swipeResult.isSwipe &&
+    swipeResult.direction === 'down' &&
+    props.canSwipeClose &&
+    height.value <= minSnapPoint.value + 10
+  ) {
+    translateY.value = height.value
+    close()
+    return
+  }
+
+  let targetSnapIndex: number
+
+  if (swipeResult.isSwipe && flattenedSnapPoints.value.length > 1) {
+    // Fast swipe - snap based on direction
+    const sortedSnapPoints = [...flattenedSnapPoints.value].sort((a, b) => a - b)
+
+    if (swipeResult.direction === 'up') {
+      // Find next higher snap point
+      const nextHigher = sortedSnapPoints.find((p) => p > height.value + 1)
+      targetSnapIndex =
+        nextHigher !== undefined
+          ? flattenedSnapPoints.value.indexOf(nextHigher)
+          : closestSnapPointIndex.value
+    } else {
+      // Find next lower snap point
+      const nextLower = [...sortedSnapPoints].reverse().find((p) => p < height.value - 1)
+      targetSnapIndex =
+        nextLower !== undefined
+          ? flattenedSnapPoints.value.indexOf(nextLower)
+          : closestSnapPointIndex.value
+    }
+  } else {
+    // Slow drag - use closest snap point (existing behavior)
+    targetSnapIndex = closestSnapPointIndex.value
+  }
+
+  currentSnapPointIndex.value = targetSnapIndex
 
   let snapPoint
-  if (typeof snapPointsRef.value[closestSnapPointIndex.value] === 'number') {
-    snapPoint = clamp(snapPointsRef.value[closestSnapPointIndex.value] as number, {
+  if (typeof snapPointsRef.value[targetSnapIndex] === 'number') {
+    snapPoint = clamp(snapPointsRef.value[targetSnapIndex] as number, {
       max: windowHeight.value,
     })
   } else {
     snapPoint = heightPercentToPixels(
-      snapPointsRef.value[closestSnapPointIndex.value] as string,
+      snapPointsRef.value[targetSnapIndex] as string,
       windowHeight.value,
     )
   }
@@ -576,7 +666,7 @@ const handleContentPanEnd = (event: PointerEvent) => {
   height.value = snapPoint
   translateY.value = 0
 
-  emit('snapped', snapPointsRef.value.indexOf(snapPointsRef.value[closestSnapPointIndex.value]))
+  emit('snapped', snapPointsRef.value.indexOf(snapPointsRef.value[targetSnapIndex]))
 }
 
 const touchStart = () => {
