@@ -1,3 +1,16 @@
+# [2.6.0-next.1](https://github.com/megaarmos/vue-spring-bottom-sheet/compare/v2.5.0...v2.6.0-next.1) (2026-01-13)
+
+
+### Bug Fixes
+
+* improve initial content pan handling with total delta and threshold to prevent 0 delta issues on touch devices ([8458496](https://github.com/megaarmos/vue-spring-bottom-sheet/commit/8458496a0a2e08bd8f9a0fddc7fe8f763a5b9297))
+
+
+### Features
+
+* separate BottomSheet backdrop and sheet teleportation, removing the container div ([4e2e354](https://github.com/megaarmos/vue-spring-bottom-sheet/commit/4e2e354f536831c0751971184e06e1dd1068347e))
+* swipe support https://github.com/megaarmos/vue-spring-bottom-sheet/issues/27 ([e8641cc](https://github.com/megaarmos/vue-spring-bottom-sheet/commit/e8641cc68dc0542ee415cbdd339504e2f21060ce))
+
 # [2.5.0](https://github.com/megaarmos/vue-spring-bottom-sheet/compare/v2.4.3...v2.5.0) (2025-09-07)
 
 
