@@ -737,93 +737,84 @@ defineExpose({ open, close, snapToPoint })
 
 <template>
   <Teleport :to="teleportTo" :defer="teleportDefer">
-    <div data-vsbs-container>
-      <Transition name="vsbs-backdrop">
-        <div
-          v-if="showSheet && blocking"
-          ref="backdrop"
-          data-vsbs-backdrop
-          @click="backdropClick()"
-        />
-      </Transition>
+    <Transition name="vsbs-backdrop">
+      <div
+        v-if="showSheet && blocking"
+        ref="backdrop"
+        data-vsbs-backdrop
+        @click="backdropClick()"
+      />
+    </Transition>
+  </Teleport>
 
-      <Transition name="vsbs-sheet" @leave="onLeave">
+  <Teleport :to="teleportTo" :defer="teleportDefer">
+    <Transition name="vsbs-sheet" @leave="onLeave">
+      <div
+        v-if="showSheet"
+        ref="sheet"
+        :style="{
+          transform: `translateY(${translateY}px)`,
+          height: `${height}px`,
+          transition: isDragging
+            ? 'none'
+            : `transform ${duration}ms ease, height ${duration}ms ease`,
+        }"
+        :data-vsbs-shadow="!blocking"
+        :data-vsbs-sheet-show="showSheet"
+        aria-modal="true"
+        data-vsbs-sheet
+        tabindex="-1"
+        @touchstart="touchStart"
+        @touchend="touchEnd"
+      >
         <div
-          v-if="showSheet"
-          ref="sheet"
-          :style="{
-            transform: `translateY(${translateY}px)`,
-            height: `${height}px`,
-            transition: isDragging
-              ? 'none'
-              : `transform ${duration}ms ease, height ${duration}ms ease`,
-          }"
-          :data-vsbs-shadow="!blocking"
-          :data-vsbs-sheet-show="showSheet"
-          aria-modal="true"
-          data-vsbs-sheet
-          tabindex="-1"
-          @touchstart="touchStart"
-          @touchend="touchEnd"
+          ref="sheetHeader"
+          data-vsbs-header
+          @pointerdown="handlePanStart"
+          @pointermove="handlePan"
+          @pointerup="handlePanEnd"
+          @pointercancel="handlePanEnd"
+          @touchmove="handleTouchMove"
+          :class="headerClass"
+          style="touch-action: none"
         >
+          <slot name="header" />
+        </div>
+        <div ref="sheetScroll" data-vsbs-scroll @scrollend="scrollEnd">
           <div
-            ref="sheetHeader"
-            data-vsbs-header
-            @pointerdown="handlePanStart"
-            @pointermove="handlePan"
-            @pointerup="handlePanEnd"
-            @pointercancel="handlePanEnd"
-            @touchmove="handleTouchMove"
-            :class="headerClass"
-            style="touch-action: none"
+            ref="sheetContentWrapper"
+            data-vsbs-content-wrapper
+            @pointerdown="handleContentPanStart"
+            @pointermove="handleContentPan"
+            @pointerup="handleContentPanEnd"
+            @pointercancel="handleContentPanEnd"
+            @touchmove="handleSheetScroll"
+            :style="{ touchAction: 'pan-y' }"
           >
-            <slot name="header" />
-          </div>
-          <div ref="sheetScroll" data-vsbs-scroll @scrollend="scrollEnd">
-            <div
-              ref="sheetContentWrapper"
-              data-vsbs-content-wrapper
-              @pointerdown="handleContentPanStart"
-              @pointermove="handleContentPan"
-              @pointerup="handleContentPanEnd"
-              @pointercancel="handleContentPanEnd"
-              @touchmove="handleSheetScroll"
-              :style="{ touchAction: 'pan-y' }"
-            >
-              <div ref="sheetContent" data-vsbs-content :class="contentClass">
-                <slot />
-              </div>
+            <div ref="sheetContent" data-vsbs-content :class="contentClass">
+              <slot />
             </div>
           </div>
-          <div
-            ref="sheetFooter"
-            data-vsbs-footer
-            @pointerdown="handlePanStart"
-            @pointermove="handlePan"
-            @pointerup="handlePanEnd"
-            @pointercancel="handlePanEnd"
-            @touchmove="handleTouchMove"
-            :class="footerClass"
-            style="touch-action: none"
-          >
-            <slot name="footer" />
-          </div>
         </div>
-      </Transition>
-    </div>
+        <div
+          ref="sheetFooter"
+          data-vsbs-footer
+          @pointerdown="handlePanStart"
+          @pointermove="handlePan"
+          @pointerup="handlePanEnd"
+          @pointercancel="handlePanEnd"
+          @touchmove="handleTouchMove"
+          :class="footerClass"
+          style="touch-action: none"
+        >
+          <slot name="footer" />
+        </div>
+      </div>
+    </Transition>
   </Teleport>
 </template>
 
 <style scoped>
-[data-vsbs-container] {
-  position: fixed;
-  inset: 0px;
-  overflow: hidden;
-  pointer-events: none;
-  z-index: 9999;
-  visibility: visible;
-}
-
 [data-vsbs-backdrop] {
   background-color: var(--vsbs-backdrop-bg, rgba(0, 0, 0, 0.5));
   inset: 0;
@@ -831,7 +822,6 @@ defineExpose({ open, close, snapToPoint })
   position: fixed;
   user-select: none;
   will-change: opacity;
-  z-index: 1;
 
   --vsbs-duration: v-bind(durationCss);
 }
@@ -861,14 +851,12 @@ defineExpose({ open, close, snapToPoint })
   left: 0;
   margin-left: auto;
   margin-right: auto;
-  max-height: inherit;
   max-width: var(--vsbs-max-width, 640px);
   pointer-events: all;
   position: fixed;
   right: 0;
   width: 100%;
   will-change: height, transform;
-  z-index: 2;
 }
 
 [data-vsbs-sheet-show='true'] {
