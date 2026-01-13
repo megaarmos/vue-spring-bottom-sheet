@@ -606,8 +606,12 @@ const handleContentPanEnd = (event: PointerEvent) => {
   // Get swipe result for direction-based snapping
   const swipeResult = swipe.end()
 
+  // Only use swipe-based logic if we were actually dragging (not scrolling content)
+  const wasActuallyDragging = preventContentScroll.value
+
   // Fast swipe down to close - when at or near min snap point
   if (
+    wasActuallyDragging &&
     swipeResult.isSwipe &&
     swipeResult.direction === 'down' &&
     props.canSwipeClose &&
@@ -620,7 +624,7 @@ const handleContentPanEnd = (event: PointerEvent) => {
 
   let targetSnapIndex: number
 
-  if (swipeResult.isSwipe && flattenedSnapPoints.value.length > 1) {
+  if (wasActuallyDragging && swipeResult.isSwipe && flattenedSnapPoints.value.length > 1) {
     // Fast swipe - snap based on direction
     const sortedSnapPoints = [...flattenedSnapPoints.value].sort((a, b) => a - b)
 
