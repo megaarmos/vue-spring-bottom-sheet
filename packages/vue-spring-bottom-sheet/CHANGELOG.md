@@ -1,3 +1,15 @@
+# [3.0.0-next.1](https://github.com/megaarmos/vue-spring-bottom-sheet/compare/v2.6.0-next.1...v3.0.0-next.1) (2026-01-13)
+
+
+### Bug Fixes
+
+* ensure bottom sheet swipe-based snapping and closing only trigger when actually dragging the sheet, not scrolling content ([9c9fae9](https://github.com/megaarmos/vue-spring-bottom-sheet/commit/9c9fae986d59f3c2763660dade71fd0dd899d058))
+
+
+### BREAKING CHANGES
+
+* removed motion-v dependency
+
 # [2.6.0-next.1](https://github.com/megaarmos/vue-spring-bottom-sheet/compare/v2.5.0...v2.6.0-next.1) (2026-01-13)
 
 
