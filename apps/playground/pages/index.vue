@@ -13,6 +13,9 @@ const open = () => {
 const close = () => {
   bottomSheet.value?.close()
 }
+
+const items = ref(['Backlog', 'Todo', 'In Progress', 'Done'])
+const value = ref('Backlog')
 </script>
 
 <template>
@@ -73,6 +76,9 @@ const close = () => {
         impedit iure facilis ipsam sit cum molestias, natus, cupiditate molestiae, id exercitationem
         eaque obcaecati a animi. Accusamus, pariatur.
       </p>
+
+      <USelect class="mb-4" v-model="value" :items="items" />
+
       <UCollapsible class="flex flex-col gap-2 w-48 mb-6">
         <UButton
           label="Open"

@@ -111,6 +111,43 @@ const focusTrap = useFocusTrap([sheet, backdrop], {
   fallbackFocus: () => sheet.value || document.body,
 })
 
+let ariaExpandedObserver: MutationObserver | null = null
+
+const setupAriaExpandedObserver = () => {
+  if (!sheet.value) return
+
+  ariaExpandedObserver = new MutationObserver((mutations) => {
+    for (const mutation of mutations) {
+      if (mutation.type === 'attributes' && mutation.attributeName === 'aria-expanded') {
+        const target = mutation.target as HTMLElement
+        const isExpanded = target.getAttribute('aria-expanded') === 'true'
+
+        if (isExpanded) {
+          focusTrap.pause()
+        } else {
+          const hasExpandedElements = sheet.value?.querySelector('[aria-expanded="true"]')
+          if (!hasExpandedElements) {
+            focusTrap.unpause()
+          }
+        }
+      }
+    }
+  })
+
+  ariaExpandedObserver.observe(sheet.value, {
+    attributes: true,
+    attributeFilter: ['aria-expanded'],
+    subtree: true,
+  })
+}
+
+const cleanupAriaExpandedObserver = () => {
+  if (ariaExpandedObserver) {
+    ariaExpandedObserver.disconnect()
+    ariaExpandedObserver = null
+  }
+}
+
 function handleTouchMove(event: TouchEvent) {
   preventContentScroll.value = true
   handleSheetScroll(event)
@@ -200,6 +237,7 @@ const open = async () => {
         if (showSheet.value) {
           emit('opened')
           focusTrap.activate()
+          setupAriaExpandedObserver()
         }
       }, props.duration)
     }
@@ -224,6 +262,8 @@ const close = () => {
   }
 
   window.removeEventListener('keydown', handleEscapeKey)
+
+  cleanupAriaExpandedObserver()
 
   if (props.blocking) {
     focusTrap.deactivate()
@@ -437,8 +477,6 @@ const handleContentPanStartLogic = (deltaY: number) => {
   const isDraggingDown = deltaY > 0
   const hasSingleSnapPoint = flattenedSnapPoints.value.length === 1
   const isAtTheTop = 0.5 > Math.abs(height.value - maxSnapPoint.value)
-
-  console.log(deltaY)
 
   if (hasSingleSnapPoint) {
     if (!props.expandOnContentDrag) {
@@ -726,6 +764,7 @@ watch(instinctHeight, (value) => {
 })
 
 onUnmounted(() => {
+  cleanupAriaExpandedObserver()
   focusTrap.deactivate()
 })
 
