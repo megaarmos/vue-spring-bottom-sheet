@@ -1,3 +1,10 @@
+# [3.0.0-next.2](https://github.com/megaarmos/vue-spring-bottom-sheet/compare/v3.0.0-next.1...v3.0.0-next.2) (2026-01-14)
+
+
+### Bug Fixes
+
+* https://github.com/megaarmos/vue-spring-bottom-sheet/issues/31 ([f8cc5c1](https://github.com/megaarmos/vue-spring-bottom-sheet/commit/f8cc5c1f0d222ab9dca108133a44c2192178c040))
+
 # [3.0.0-next.1](https://github.com/megaarmos/vue-spring-bottom-sheet/compare/v2.6.0-next.1...v3.0.0-next.1) (2026-01-13)
 
 
