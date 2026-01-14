@@ -10,11 +10,11 @@
     "postinstall": "nuxt prepare"
   },
   "dependencies": {
-    "@nuxt/icon": "1.12.0",
-    "@nuxt/ui": "3.0.2",
-    "nuxt": "^3.17.3",
-    "typescript": "^5.8.3",
-    "vue": "^3.5.14",
-    "vue-router": "^4.5.1"
+    "@nuxt/icon": "2.2.0",
+    "@nuxt/ui": "4.3.0",
+    "nuxt": "^4.2.2",
+    "typescript": "^5.9.3",
+    "vue": "^3.5.26",
+    "vue-router": "^4.6.4"
   }
 }

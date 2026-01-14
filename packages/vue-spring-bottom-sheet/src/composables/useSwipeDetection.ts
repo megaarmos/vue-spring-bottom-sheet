@@ -55,11 +55,14 @@ export function useSwipeDetection(options: UseSwipeDetectionOptions = {}) {
     if (positions.length >= 2) {
       const oldest = positions[0]
       const newest = positions[positions.length - 1]
-      const deltaY = newest.y - oldest.y
-      const deltaTime = newest.time - oldest.time
 
-      if (deltaTime > 0) {
-        velocity = deltaY / deltaTime // px/ms (positive = down, negative = up)
+      if (oldest && newest) {
+        const deltaY = newest.y - oldest.y
+        const deltaTime = newest.time - oldest.time
+
+        if (deltaTime > 0) {
+          velocity = deltaY / deltaTime // px/ms (positive = down, negative = up)
+        }
       }
     }
 
