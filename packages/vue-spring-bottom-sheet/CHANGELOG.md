@@ -1,3 +1,10 @@
+# [3.0.0-next.3](https://github.com/megaarmos/vue-spring-bottom-sheet/compare/v3.0.0-next.2...v3.0.0-next.3) (2026-01-14)
+
+
+### Features
+
+* update dependencies ([a6b9a40](https://github.com/megaarmos/vue-spring-bottom-sheet/commit/a6b9a4038bd6ab186139f3dd5892d0b8b439596a))
+
 # [3.0.0-next.2](https://github.com/megaarmos/vue-spring-bottom-sheet/compare/v3.0.0-next.1...v3.0.0-next.2) (2026-01-14)
 
 
