@@ -73,7 +73,6 @@ export function useSwipeDetection(options: UseSwipeDetectionOptions = {}) {
       direction = velocity < 0 ? 'up' : 'down'
     }
 
-    // Reset state
     recentPositions.value = []
 
     return {

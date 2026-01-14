@@ -79,7 +79,7 @@ const snapToPoint = (snapPoint: number) => {
       :blocking="true"
       :can-swipe-close="false"
       :expand-on-content-drag="expandOnContentDrag"
-      :snap-points="['90%', '50%', 250, instinctHeight / 2]"
+      :snap-points="['90%', '50%', 250, instinctHeight]"
       @instinct-height="(n) => (instinctHeight = n)"
     >
       <div class="button-group">
