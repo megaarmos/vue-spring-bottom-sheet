@@ -1,3 +1,10 @@
+# [3.0.0-next.4](https://github.com/megaarmos/vue-spring-bottom-sheet/compare/v3.0.0-next.3...v3.0.0-next.4) (2026-01-14)
+
+
+### Bug Fixes
+
+* context menu disrupting mouse dragging ([afaeeed](https://github.com/megaarmos/vue-spring-bottom-sheet/commit/afaeeeda65b1d60adf9ec0ec829d5459e4e4fee1))
+
 # [3.0.0-next.3](https://github.com/megaarmos/vue-spring-bottom-sheet/compare/v3.0.0-next.2...v3.0.0-next.3) (2026-01-14)
 
 
