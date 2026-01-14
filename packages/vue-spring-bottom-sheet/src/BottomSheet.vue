@@ -315,6 +315,7 @@ function emitDragDirection(deltaY: number) {
 
 const handlePanStart = (event: PointerEvent) => {
   if (!sheet.value) return
+  if (event.button !== 0) return
 
   // Capture current animated state via getComputedStyle
   const style = window.getComputedStyle(sheet.value)
@@ -341,6 +342,10 @@ const handlePanStart = (event: PointerEvent) => {
 
 const handlePan = (event: PointerEvent) => {
   if (!isDragging.value) return
+  if (event.buttons !== 1) {
+    handlePanEnd(event)
+    return
+  }
 
   const deltaY = event.clientY - dragStartY.value
   const currentY = event.clientY
@@ -474,6 +479,36 @@ const handlePanEnd = (event: PointerEvent) => {
   emit('snapped', snapPointsRef.value.indexOf(snapValue))
 }
 
+const handleContextMenu = (event: MouseEvent) => {
+  // If currently dragging, prevent context menu and reset drag state
+  if (isDragging.value) {
+    event.preventDefault()
+    isDragging.value = false
+    isFirstContentMove.value = true
+
+    // Snap to closest point
+    const targetSnapIndex = closestSnapPointIndex.value
+    currentSnapPointIndex.value = targetSnapIndex
+
+    const snapValue = snapPointsRef.value[targetSnapIndex]
+    if (!snapValue) return
+
+    let snapPoint
+    if (typeof snapValue === 'number') {
+      snapPoint = clamp(snapValue, {
+        max: windowHeight.value,
+      })
+    } else {
+      snapPoint = heightPercentToPixels(snapValue, windowHeight.value)
+    }
+
+    height.value = snapPoint
+    translateY.value = 0
+
+    emit('snapped', snapPointsRef.value.indexOf(snapValue))
+  }
+}
+
 // Content pan start logic - deferred to first move because pointerdown has no delta
 const handleContentPanStartLogic = (deltaY: number) => {
   if (!sheetScroll.value) return
@@ -518,6 +553,8 @@ const handleContentPanStartLogic = (deltaY: number) => {
 
 const handleContentPanStart = (event: PointerEvent) => {
   if (!sheet.value) return
+  // Only allow left mouse button (button 0) to start dragging
+  if (event.button !== 0) return
 
   // Capture current animated state
   const style = window.getComputedStyle(sheet.value)
@@ -545,6 +582,11 @@ const handleContentPanStart = (event: PointerEvent) => {
 
 const handleContentPan = (event: PointerEvent) => {
   if (!isDragging.value) return
+  // Ensure left button is still pressed (buttons === 1)
+  if (event.buttons !== 1) {
+    handleContentPanEnd(event)
+    return
+  }
 
   if (!props.expandOnContentDrag) {
     preventContentScroll.value = false
@@ -821,6 +863,7 @@ defineExpose({ open, close, snapToPoint })
           @pointermove="handlePan"
           @pointerup="handlePanEnd"
           @pointercancel="handlePanEnd"
+          @contextmenu="handleContextMenu"
           @touchmove="handleTouchMove"
           :class="headerClass"
           style="touch-action: none"
@@ -834,6 +877,7 @@ defineExpose({ open, close, snapToPoint })
             @pointermove="handleContentPan"
             @pointerup="handleContentPanEnd"
             @pointercancel="handleContentPanEnd"
+            @contextmenu="handleContextMenu"
             @touchmove="handleSheetScroll"
             :style="{ touchAction: 'pan-y' }"
           >
@@ -849,6 +893,7 @@ defineExpose({ open, close, snapToPoint })
           @pointermove="handlePan"
           @pointerup="handlePanEnd"
           @pointercancel="handlePanEnd"
+          @contextmenu="handleContextMenu"
           @touchmove="handleTouchMove"
           :class="footerClass"
           style="touch-action: none"
