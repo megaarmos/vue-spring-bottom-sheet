@@ -25,7 +25,6 @@ const emit = defineEmits<{
   (e: 'opening-started'): void
   (e: 'closed'): void
   (e: 'closing-started'): void
-  (e: 'ready'): void
   (e: 'dragging-up'): void
   (e: 'dragging-down'): void
   (e: 'snapped', snapPointIndex?: number): void

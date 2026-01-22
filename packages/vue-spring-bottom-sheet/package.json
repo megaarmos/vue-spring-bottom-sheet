@@ -16,8 +16,6 @@
     "overlay",
     "popup",
     "vue",
-    "vueuse/motion",
-    "vueuse/gesture",
     "sheet",
     "typescript"
   ],
