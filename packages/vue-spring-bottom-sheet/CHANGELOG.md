@@ -1,3 +1,5 @@
+# [3.0.0-next.5](https://github.com/megaarmos/vue-spring-bottom-sheet/compare/v3.0.0-next.4...v3.0.0-next.5) (2026-01-22)
+
 # [3.0.0-next.4](https://github.com/megaarmos/vue-spring-bottom-sheet/compare/v3.0.0-next.3...v3.0.0-next.4) (2026-01-14)
 
 
