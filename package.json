@@ -8,6 +8,8 @@
   ],
   "scripts": {
     "dev": "concurrently \"cd apps/playground && bun run dev --host\" \"cd packages/vue-spring-bottom-sheet && bun run dev\"",
+    "build": "cd apps/playground && bun run build",
+    "start": "cd apps/playground && node .output/server/index.mjs",
     "semantic-release": "semantic-release"
   },
   "dependencies": {
