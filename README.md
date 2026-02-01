@@ -1,7 +1,5 @@
 # Vue Spring Bottom Sheet
 
-**vue-spring-bottom-sheet** is a Vue.js bottom sheet component.
-
 😎 **Modern** and 🚀 **Performant** Bottom Sheet for Vue.js
 
 [Demo](https://vue-spring-bottom-sheet.douxcode.com/) 👀
