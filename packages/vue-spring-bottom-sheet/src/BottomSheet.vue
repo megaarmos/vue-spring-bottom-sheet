@@ -37,15 +37,11 @@ const showSheet = useVModel(props, 'modelValue', emit, {
 })
 
 watch(showSheet, (value) => {
-  if (value) {
-    open()
-  }
+  value ? open() : close()
 })
 
 onMounted(() => {
-  if (showSheet.value) {
-    open()
-  }
+  if (showSheet.value) open()
 })
 
 const sheet = shallowRef<HTMLElement | null>(null)
