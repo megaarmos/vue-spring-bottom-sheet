@@ -32,12 +32,7 @@ jobs:
       - name: Install dependencies
         run: bun install
 
-      - name: Build package
-        run: |
-          cd packages/vue-spring-bottom-sheet
-          bun run prepublishOnly
-
       - name: Run semantic-release
-        run: bunx semantic-release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: bun run semantic-release
