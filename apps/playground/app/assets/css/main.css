@@ -1,7 +1,11 @@
 @import 'tailwindcss';
 @import '@nuxt/ui';
 
-.dark [data-vsbs-container] {
+@theme static {
+  --font-sans: 'Public Sans', sans-serif;
+}
+
+.dark [data-vsbs-sheet] {
   color: #fff;
 
   --vsbs-backdrop-bg: rgba(0, 0, 0, 0.75);

@@ -1,7 +1,5 @@
 # Vue Spring Bottom Sheet
 
-**vue-spring-bottom-sheet** is built on top of **[motion-v]**.
-
 😎 **Modern** and 🚀 **Performant** Bottom Sheet for Vue.js
 
 [Demo](https://vue-spring-bottom-sheet.douxcode.com/) 👀
@@ -178,6 +176,5 @@ This project was inspired by the following:
 - [react-spring-bottom-sheet]: Accessible ♿️, Delightful ✨, & Fast 🚀
 - [@webzlodimir/vue-bottom-sheet]: 🔥 A nice clean and touch-friendly bottom sheet component based on Vue.js and Hammer.js for Vue 3
 
-[motion-v]: https://motion.unovue.com/
-[react-spring-bottom-sheet]: https://react-spring.bottom-sheet.dev/
+[react-spring-bottom-sheet]: https://react-spring.bottom.sheet.dev/
 [@webzlodimir/vue-bottom-sheet]: https://github.com/vaban-ru/vue-bottom-sheet

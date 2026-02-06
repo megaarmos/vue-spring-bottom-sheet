@@ -25,7 +25,7 @@ export default defineConfig({
       cssFileName: 'style',
     },
     rollupOptions: {
-      external: ['vue', '@vueuse/core', '@vueuse/integrations/useFocusTrap', 'motion-v'],
+      external: ['vue', '@vueuse/core', '@vueuse/integrations/useFocusTrap'],
     },
   },
 })

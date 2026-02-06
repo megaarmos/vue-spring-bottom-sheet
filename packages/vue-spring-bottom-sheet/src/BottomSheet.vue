@@ -1,16 +1,14 @@
 <script setup lang="ts">
 import type { BottomSheetProps } from './types'
 
-import { Motion, AnimatePresence, useMotionValue, animate } from 'motion-v'
-import type { PanInfo } from 'motion-v'
-
-import { computed, nextTick, onUnmounted, ref, toRefs, watch, onMounted } from 'vue'
-import { useElementBounding, useScrollLock, useVModel, useWindowSize } from '@vueuse/core'
-import { useFocusTrap } from '@vueuse/integrations/useFocusTrap'
+import { computed, nextTick, onUnmounted, ref, shallowRef, toRefs, watch, onMounted } from 'vue'
+import { useElementBounding, useVModel, useWindowSize } from '@vueuse/core'
 import { useSnapPoints } from './composables/useSnapPoints'
+import { useDragGestures } from './composables/useDragGestures'
+import { useSheetScrollLock } from './composables/useSheetScrollLock'
+import { useFocusManagement } from './composables/useFocusManagement'
 import { clamp, funnel } from 'remeda'
-import { rubberbandIfOutOfBounds } from './utils/rubberbandIfOutOfBounds'
-import { heightPercentToPixels } from './utils/heightPercentToPixels'
+import { resolveSnapPoint } from './utils/resolveSnapPoint'
 
 const props = withDefaults(defineProps<BottomSheetProps>(), {
   blocking: true,
@@ -27,7 +25,6 @@ const emit = defineEmits<{
   (e: 'opening-started'): void
   (e: 'closed'): void
   (e: 'closing-started'): void
-  (e: 'ready'): void
   (e: 'dragging-up'): void
   (e: 'dragging-down'): void
   (e: 'snapped', snapPointIndex?: number): void
@@ -40,26 +37,19 @@ const showSheet = useVModel(props, 'modelValue', emit, {
 })
 
 watch(showSheet, (value) => {
-  if (value) {
-    open()
-  }
+  value ? open() : close()
 })
 
 onMounted(() => {
-  if (showSheet.value) {
-    open()
-  }
+  if (showSheet.value) open()
 })
 
-const sheet = ref()
-const sheetHeader = ref<HTMLElement | null>(null)
-const sheetFooter = ref<HTMLElement | null>(null)
-const sheetScroll = ref<HTMLElement | null>(null)
-const sheetContentWrapper = ref<HTMLElement | null>(null)
-const sheetContent = ref<HTMLElement | null>(null)
-
-const backdrop = ref<HTMLElement | null>(null)
-const preventContentScroll = ref(props.expandOnContentDrag)
+const sheet = shallowRef<HTMLElement | null>(null)
+const sheetHeader = shallowRef<HTMLElement | null>(null)
+const sheetFooter = shallowRef<HTMLElement | null>(null)
+const sheetScroll = shallowRef<HTMLElement | null>(null)
+const sheetContent = shallowRef<HTMLElement | null>(null)
+const backdrop = shallowRef<HTMLElement | null>(null)
 
 const { height: windowHeight } = useWindowSize()
 const { height: sheetHeight } = useElementBounding(sheet)
@@ -67,25 +57,22 @@ const { height: sheetHeaderHeight } = useElementBounding(sheetHeader)
 const { height: sheetContentHeight } = useElementBounding(sheetContent)
 const { height: sheetFooterHeight } = useElementBounding(sheetFooter)
 
-const instinctHeight = computed({
-  get() {
-    return clamp(
-      Math.ceil(sheetContentHeight.value + sheetHeaderHeight.value + sheetFooterHeight.value),
-      {
-        max: windowHeight.value,
-      },
-    )
-  },
-  set(newValue: number[]) {
-    ;[sheetHeaderHeight.value, sheetContentHeight.value, sheetFooterHeight.value] = newValue
-  },
+const instinctHeight = computed(() => {
+  return clamp(
+    Math.ceil(sheetContentHeight.value + sheetHeaderHeight.value + sheetFooterHeight.value),
+    { max: windowHeight.value },
+  )
 })
+
+const setInstinctHeights = (header: number, content: number, footer: number) => {
+  sheetHeaderHeight.value = header
+  sheetContentHeight.value = content
+  sheetFooterHeight.value = footer
+}
 
 const height = ref(0)
 const translateY = ref(0)
-
-const heightValue = useMotionValue(0)
-const translateYValue = useMotionValue(0)
+const durationCss = computed(() => props.duration + 'ms')
 
 const { snapPoints: propSnapPoints } = toRefs(props)
 const snapPointsRef = computed(() => propSnapPoints.value ?? [instinctHeight.value])
@@ -97,63 +84,71 @@ const {
   maxSnapPoint,
 } = useSnapPoints(snapPointsRef, height, windowHeight)
 
-// eslint-disable-next-line
-let controls: any
+const blockingRef = computed(() => props.blocking)
+const canSwipeCloseRef = computed(() => props.canSwipeClose)
+const swipeCloseThresholdRef = computed(() => props.swipeCloseThreshold)
+const expandOnContentDragRef = computed(() => props.expandOnContentDrag)
+const scrollLock = useSheetScrollLock({ blocking: blockingRef })
 
-const isWindowScrollLocked = useScrollLock(document.body)
-const isWindowRootScrollLocked = useScrollLock(document.documentElement)
-
-const focusTrap = useFocusTrap([sheet, backdrop], {
-  immediate: false,
-  fallbackFocus: () => sheet.value?.$el || document.body,
+const focusManagement = useFocusManagement({
+  sheetRef: sheet,
+  backdropRef: backdrop,
+  blocking: blockingRef,
+  onEscape: () => close(),
 })
 
-function handleTouchMove(event: TouchEvent) {
-  preventContentScroll.value = true
-  handleSheetScroll(event)
-}
+const { isDragging, headerFooterHandlers, contentWrapperHandlers, scrollEnd } = useDragGestures({
+  sheetRef: sheet,
+  sheetScrollRef: sheetScroll,
+  height,
+  translateY,
+  sheetHeight,
+  windowHeight,
+  snapPointsRef,
+  flattenedSnapPoints,
+  currentSnapPointIndex,
+  closestSnapPointIndex,
+  minSnapPoint,
+  maxSnapPoint,
+  canSwipeClose: canSwipeCloseRef,
+  swipeCloseThreshold: swipeCloseThresholdRef,
+  expandOnContentDrag: expandOnContentDragRef,
+  onClose: () => close(),
+  onSnapped: (index) => emit('snapped', index),
+  onDraggingUp: () => emit('dragging-up'),
+  onDraggingDown: () => emit('dragging-down'),
+})
 
-function handleSheetScroll(event: TouchEvent) {
-  if (preventContentScroll.value) {
-    event.preventDefault()
-  }
-}
-
-const handleEscapeKey = (e: KeyboardEvent) => {
-  if (e.key === 'Escape') close()
-}
+const isOpening = ref(false)
+const isClosing = ref(false)
 
 const backdropClick = () => {
   if (props.canBackdropClose) close()
 }
 
-let isOpening = false
 const open = async () => {
-  if (isOpening) return
+  if (isOpening.value) return
 
   showSheet.value = true
-  isOpening = true
+  isOpening.value = true
   emit('opening-started')
 
-  if (props.blocking) {
-    isWindowScrollLocked.value = true
-    isWindowRootScrollLocked.value = true
-  }
+  scrollLock.lockIfBlocking()
 
   await nextTick()
 
-  const sheetElement = sheet.value.$el as HTMLElement
+  const sheetElement = sheet.value as HTMLElement
   sheetHeight.value = sheetElement.getBoundingClientRect().height
 
   const sheetContentElement = sheetElement.querySelector('[data-vsbs-content]') as HTMLElement
   const sheetHeaderElement = sheetElement.querySelector('[data-vsbs-header]') as HTMLElement
   const sheetFooterElement = sheetElement.querySelector('[data-vsbs-footer]') as HTMLElement
 
-  instinctHeight.value = [
+  setInstinctHeights(
     sheetHeaderElement.getBoundingClientRect().height,
     sheetContentElement.getBoundingClientRect().height,
     sheetFooterElement.getBoundingClientRect().height,
-  ]
+  )
 
   await nextTick()
 
@@ -161,7 +156,7 @@ const open = async () => {
     (point) => point === minSnapPoint.value,
   )
 
-  if (props.initialSnapPoint) {
+  if (props.initialSnapPoint !== undefined) {
     const index = props.initialSnapPoint
 
     if (index < 0 || index >= snapPointsRef.value.length) {
@@ -169,72 +164,47 @@ const open = async () => {
       return
     }
 
-    let snapPoint
-    if (typeof snapPointsRef.value[index] === 'number') {
-      snapPoint = clamp(snapPointsRef.value[index], {
-        max: windowHeight.value,
-      })
-    } else {
-      snapPoint = heightPercentToPixels(snapPointsRef.value[index], windowHeight.value)
-    }
+    const snapValue = snapPointsRef.value[index]
+    if (!snapValue) return
 
-    height.value = snapPoint
+    height.value = resolveSnapPoint(snapValue, windowHeight.value)
   } else {
-    height.value = clamp(minSnapPoint.value, {
-      max: windowHeight.value,
-    })
+    height.value = clamp(minSnapPoint.value, { max: windowHeight.value })
   }
 
   translateY.value = height.value
 
-  heightValue.jump(height.value)
-  translateYValue.jump(height.value)
-
   requestAnimationFrame(() => {
-    controls = animate(heightValue, height.value, {
-      duration: props.duration / 1000,
-      ease: 'easeInOut',
-    })
+    translateY.value = 0
 
-    controls = animate(translateYValue, 0, {
-      duration: props.duration / 1000,
-      ease: 'easeInOut',
-      onComplete: () => {
-        if (props.blocking) {
+    if (props.blocking) {
+      setTimeout(() => {
+        if (showSheet.value) {
           emit('opened')
-          focusTrap.activate()
+          focusManagement.activate()
         }
-      },
-    })
+      }, props.duration)
+    }
   })
 
-  window.addEventListener('keydown', handleEscapeKey)
-
-  isOpening = false
+  isOpening.value = false
 }
 
-let isClosing = false
 const close = () => {
-  if (isClosing) return
+  if (isClosing.value) return
 
   showSheet.value = false
-  isClosing = true
+  isClosing.value = true
   emit('closing-started')
 
-  if (props.blocking) {
-    isWindowScrollLocked.value = false
-    isWindowRootScrollLocked.value = false
-  }
+  scrollLock.unlockIfBlocking()
+  focusManagement.deactivate()
 
-  window.removeEventListener('keydown', handleEscapeKey)
-
-  if (props.blocking) {
-    focusTrap.deactivate()
-  }
+  translateY.value = height.value
 
   setTimeout(() => {
     emit('closed')
-    isClosing = false
+    isClosing.value = false
   }, props.duration)
 }
 
@@ -248,256 +218,11 @@ const snapToPoint = (index: number) => {
 
   currentSnapPointIndex.value = index
 
-  let snapPoint
-  if (typeof snapPointsRef.value[index] === 'number') {
-    snapPoint = clamp(snapPointsRef.value[index], {
-      max: windowHeight.value,
-    })
-  } else {
-    snapPoint = heightPercentToPixels(snapPointsRef.value[index], windowHeight.value)
-  }
+  const snapValue = snapPointsRef.value[index]
+  if (!snapValue) return
 
-  height.value = snapPoint
-
-  controls = animate(heightValue, height.value, {
-    duration: props.duration / 1000,
-    ease: 'easeInOut',
-    onComplete: () => emit('snapped', snapPointsRef.value.indexOf(snapPointsRef.value[index])),
-  })
-}
-
-function emitDragDirection(deltaY: number) {
-  if (deltaY > 0) {
-    emit('dragging-down')
-  } else if (deltaY < 0) {
-    emit('dragging-up')
-  }
-}
-
-const handlePanStart = () => {
-  height.value = sheetHeight.value
-  translateY.value = translateYValue.get()
-
-  heightValue.jump(height.value)
-  translateYValue.jump(translateY.value)
-}
-
-const handlePan = async (_: PointerEvent, info: PanInfo) => {
-  await nextTick()
-
-  if (!sheet.value) return
-
-  if (translateY.value <= 0) {
-    height.value -= info.delta.y
-  }
-
-  if (height.value <= minSnapPoint.value) {
-    height.value = minSnapPoint.value
-
-    translateY.value += info.delta.y
-
-    translateYValue.set(
-      props.canSwipeClose
-        ? clamp(translateY.value, { min: 0 })
-        : clamp(rubberbandIfOutOfBounds(translateY.value, -sheetHeight.value, 0, 0.5), {
-            min: 0,
-          }),
-    )
-  }
-
-  heightValue.set(
-    clamp(rubberbandIfOutOfBounds(height.value, 0, maxSnapPoint.value, 0.25), {
-      min: 0,
-      max: windowHeight.value,
-    }),
-  )
-
-  emitDragDirection(info.delta.y)
-}
-
-const handlePanEnd = () => {
-  if (props.canSwipeClose) {
-    let threshold = height.value / 2
-
-    if (props.swipeCloseThreshold && typeof props.swipeCloseThreshold === 'number') {
-      threshold = props.swipeCloseThreshold
-    }
-
-    if (
-      props.swipeCloseThreshold &&
-      typeof props.swipeCloseThreshold === 'string' &&
-      props.swipeCloseThreshold.includes('%')
-    ) {
-      threshold = height.value * (Number(props.swipeCloseThreshold.replace('%', '')) / 100)
-    }
-
-    if (translateY.value > threshold) {
-      translateY.value = height.value
-    }
-  } else {
-    translateY.value = 0
-  }
-
-  controls = animate(translateYValue, translateY.value, {
-    duration: props.duration / 1000,
-    ease: 'easeInOut',
-  })
-
-  if (translateY.value === height.value) {
-    translateY.value = 0
-
-    close()
-  }
-
-  currentSnapPointIndex.value = closestSnapPointIndex.value
-
-  let snapPoint
-  if (typeof snapPointsRef.value[closestSnapPointIndex.value] === 'number') {
-    snapPoint = clamp(snapPointsRef.value[closestSnapPointIndex.value] as number, {
-      max: windowHeight.value,
-    })
-  } else {
-    snapPoint = heightPercentToPixels(
-      snapPointsRef.value[closestSnapPointIndex.value] as string,
-      windowHeight.value,
-    )
-  }
-
-  height.value = snapPoint
-
-  controls = animate(heightValue, height.value, {
-    duration: props.duration / 1000,
-    ease: 'easeInOut',
-    onComplete: () =>
-      emit(
-        'snapped',
-        snapPointsRef.value.indexOf(snapPointsRef.value[closestSnapPointIndex.value]),
-      ),
-  })
-  controls = animate(translateYValue, 0, {
-    duration: props.duration / 1000,
-    ease: 'easeInOut',
-  })
-}
-
-const handleContentPanStart = (_: PointerEvent, info: PanInfo) => {
-  height.value = sheetHeight.value
-  translateY.value = translateYValue.get()
-
-  if (controls) {
-    controls.stop()
-  }
-
-  if (!sheetScroll.value) return
-
-  const isScrollAtTop = sheetScroll.value.scrollTop === 0
-  const isDraggingDown = info.delta.y > 0
-  const hasSingleSnapPoint = flattenedSnapPoints.value.length === 1
-  const isAtTheTop = 0.5 > Math.abs(height.value - maxSnapPoint.value)
-
-  if (hasSingleSnapPoint) {
-    if (!props.expandOnContentDrag) {
-      preventContentScroll.value = false
-      return
-    }
-
-    if (translateYValue.get() === 0 && isScrollAtTop && isDraggingDown) {
-      preventContentScroll.value = true
-    }
-    if (translateYValue.get() === 0 && isScrollAtTop && !isDraggingDown) {
-      preventContentScroll.value = false
-    }
-  } else {
-    if (!props.expandOnContentDrag) {
-      preventContentScroll.value = false
-      return
-    }
-
-    preventContentScroll.value = true
-    if (isAtTheTop) {
-      if (isDraggingDown && isScrollAtTop) {
-        preventContentScroll.value = true
-      }
-      if (!isDraggingDown && isScrollAtTop) {
-        preventContentScroll.value = false
-      }
-      if (!isScrollAtTop) {
-        preventContentScroll.value = false
-      }
-    }
-  }
-}
-
-const handleContentPan = async (_: PointerEvent, info: PanInfo) => {
-  await nextTick()
-
-  if (!props.expandOnContentDrag) {
-    preventContentScroll.value = false
-    return
-  }
-
-  if (!sheet.value) return
-
-  if (translateY.value === 0 && preventContentScroll.value && props.expandOnContentDrag) {
-    height.value -= info.delta.y
-  }
-
-  if (height.value <= minSnapPoint.value) {
-    height.value = minSnapPoint.value
-
-    if (preventContentScroll.value && props.expandOnContentDrag) {
-      translateY.value += info.delta.y
-    }
-
-    translateY.value = clamp(translateY.value, { min: 0, max: minSnapPoint.value })
-
-    translateYValue.set(
-      props.canSwipeClose
-        ? clamp(translateY.value, { min: 0 })
-        : clamp(rubberbandIfOutOfBounds(translateY.value, -sheetHeight.value, 0, 0.5), {
-            min: 0,
-          }),
-    )
-  }
-
-  if (height.value > maxSnapPoint.value) {
-    height.value = maxSnapPoint.value
-  }
-
-  height.value = clamp(height.value, { max: windowHeight.value })
-
-  const hasSingleSnapPoint = flattenedSnapPoints.value.length === 1
-  if (!hasSingleSnapPoint) {
-    if (height.value === maxSnapPoint.value) {
-      preventContentScroll.value = false
-    }
-  }
-
-  heightValue.set(height.value)
-
-  emitDragDirection(info.delta.y)
-}
-
-const touchStart = () => {
-  if (!props.blocking) {
-    isWindowScrollLocked.value = true
-    isWindowRootScrollLocked.value = true
-  }
-}
-
-const touchEnd = () => {
-  if (!props.blocking) {
-    isWindowScrollLocked.value = false
-    isWindowRootScrollLocked.value = false
-  }
-}
-
-const scrollEnd = () => {
-  if (!sheetScroll.value) return
-
-  const isScrollAtTop = sheetScroll.value.scrollTop === 0
-
-  preventContentScroll.value = isScrollAtTop
+  height.value = resolveSnapPoint(snapValue, windowHeight.value)
+  emit('snapped', snapPointsRef.value.indexOf(snapValue))
 }
 
 const debouncedSnapToPoint = funnel((index) => snapToPoint(index), {
@@ -514,18 +239,10 @@ watch(snapPointsRef, (value, oldValue) => {
   const currentSnapPoint = value[currentSnapPointIndex.value]
   const previousSnapPoint = oldValue[currentSnapPointIndex.value]
 
-  if (typeof currentSnapPoint === 'string') return
-  if (typeof previousSnapPoint === 'string') return
+  if (!currentSnapPoint || typeof currentSnapPoint === 'string') return
+  if (!previousSnapPoint || typeof previousSnapPoint === 'string') return
 
-  height.value = clamp(currentSnapPoint, {
-    max: windowHeight.value,
-  })
-  if (currentSnapPoint !== previousSnapPoint) {
-    controls = animate(heightValue, height.value, {
-      duration: props.duration / 1000,
-      ease: 'easeInOut',
-    })
-  }
+  height.value = clamp(currentSnapPoint, { max: windowHeight.value })
 })
 
 watch(windowHeight, () => {
@@ -537,98 +254,85 @@ watch(instinctHeight, (value) => {
 })
 
 onUnmounted(() => {
-  focusTrap.deactivate()
+  focusManagement.cleanup()
 })
+
+const onLeave = (el: Element) => {
+  const element = el as HTMLElement
+  element.style.transition = `transform ${props.duration}ms ease, height ${props.duration}ms ease`
+  element.style.transform = `translateY(${height.value}px)`
+}
 
 defineExpose({ open, close, snapToPoint })
 </script>
 
 <template>
   <Teleport :to="teleportTo" :defer="teleportDefer">
-    <div data-vsbs-container>
-      <AnimatePresence>
-        <Motion
-          v-if="showSheet && blocking"
-          ref="backdrop"
-          data-vsbs-backdrop
-          @click="backdropClick()"
-          :transition="{
-            ease: 'easeInOut',
-            duration: duration / 1000,
-          }"
-          :initial="{ opacity: 0 }"
-          :animate="{ opacity: 1 }"
-          :exit="{ opacity: 0 }"
-        />
-      </AnimatePresence>
+    <Transition name="vsbs-backdrop">
+      <div
+        v-if="showSheet && blocking"
+        ref="backdrop"
+        data-vsbs-backdrop
+        @click="backdropClick()"
+      />
+    </Transition>
+  </Teleport>
 
-      <AnimatePresence>
-        <Motion
-          v-if="showSheet"
-          ref="sheet"
-          :exit="{ y: '100%', height: sheetHeight }"
-          :initial="false"
-          :style="{ y: translateYValue, height: heightValue }"
-          :data-vsbs-shadow="!blocking"
-          :data-vsbs-sheet-show="showSheet"
-          aria-modal="true"
-          data-vsbs-sheet
-          tabindex="-1"
-          @touchstart="touchStart"
-          @touchend="touchEnd"
+  <Teleport :to="teleportTo" :defer="teleportDefer">
+    <Transition name="vsbs-sheet" @leave="onLeave">
+      <div
+        v-if="showSheet"
+        ref="sheet"
+        :style="{
+          transform: `translateY(${translateY}px)`,
+          height: `${height}px`,
+          transition: isDragging
+            ? 'none'
+            : `transform ${duration}ms ease, height ${duration}ms ease`,
+        }"
+        :data-vsbs-shadow="!blocking"
+        :data-vsbs-sheet-show="showSheet"
+        aria-modal="true"
+        data-vsbs-sheet
+        tabindex="-1"
+        @touchstart="scrollLock.touchStartHandler"
+        @touchend="scrollLock.touchEndHandler"
+      >
+        <div
+          ref="sheetHeader"
+          data-vsbs-header
+          v-bind="headerFooterHandlers"
+          :class="headerClass"
+          style="touch-action: none"
         >
-          <Motion
-            ref="sheetHeader"
-            data-vsbs-header
-            @pan-start="handlePanStart"
-            @pan="handlePan"
-            @pan-end="handlePanEnd"
-            @touchmove="handleTouchMove"
-            :class="headerClass"
+          <slot name="header" />
+        </div>
+        <div ref="sheetScroll" data-vsbs-scroll @scrollend="scrollEnd">
+          <div
+            data-vsbs-content-wrapper
+            v-bind="contentWrapperHandlers"
+            :style="{ touchAction: 'pan-y' }"
           >
-            <slot name="header" />
-          </Motion>
-          <div ref="sheetScroll" data-vsbs-scroll @scrollend="scrollEnd">
-            <Motion
-              ref="sheetContentWrapper"
-              data-vsbs-content-wrapper
-              @pan-start="handleContentPanStart"
-              @pan="handleContentPan"
-              @pan-end="handlePanEnd"
-              @touchmove="handleSheetScroll"
-            >
-              <div ref="sheetContent" data-vsbs-content :class="contentClass">
-                <slot />
-              </div>
-            </Motion>
+            <div ref="sheetContent" data-vsbs-content :class="contentClass">
+              <slot />
+            </div>
           </div>
-          <Motion
-            ref="sheetFooter"
-            data-vsbs-footer
-            @pan-start="handlePanStart"
-            @pan="handlePan"
-            @pan-end="handlePanEnd"
-            @touchmove="handleTouchMove"
-            :class="footerClass"
-          >
-            <slot name="footer" />
-          </Motion>
-        </Motion>
-      </AnimatePresence>
-    </div>
+        </div>
+        <div
+          ref="sheetFooter"
+          data-vsbs-footer
+          v-bind="headerFooterHandlers"
+          :class="footerClass"
+          style="touch-action: none"
+        >
+          <slot name="footer" />
+        </div>
+      </div>
+    </Transition>
   </Teleport>
 </template>
 
 <style scoped>
-[data-vsbs-container] {
-  position: fixed;
-  inset: 0px;
-  overflow: hidden;
-  pointer-events: none;
-  z-index: 9999;
-  visibility: visible;
-}
-
 [data-vsbs-backdrop] {
   background-color: var(--vsbs-backdrop-bg, rgba(0, 0, 0, 0.5));
   inset: 0;
@@ -636,7 +340,8 @@ defineExpose({ open, close, snapToPoint })
   position: fixed;
   user-select: none;
   will-change: opacity;
-  z-index: 1;
+
+  --vsbs-duration: v-bind(durationCss);
 }
 
 [data-vsbs-shadow='true']::before {
@@ -664,14 +369,12 @@ defineExpose({ open, close, snapToPoint })
   left: 0;
   margin-left: auto;
   margin-right: auto;
-  max-height: inherit;
   max-width: var(--vsbs-max-width, 640px);
   pointer-events: all;
   position: fixed;
   right: 0;
   width: 100%;
-  will-change: height;
-  z-index: 2;
+  will-change: height, transform;
 }
 
 [data-vsbs-sheet-show='true'] {
@@ -735,5 +438,15 @@ defineExpose({ open, close, snapToPoint })
   display: grid;
   padding: 8px var(--vsbs-padding-x, 16px);
   user-select: none;
+}
+
+.vsbs-backdrop-enter-active,
+.vsbs-backdrop-leave-active {
+  transition: opacity var(--vsbs-duration) ease;
+}
+
+.vsbs-backdrop-enter-from,
+.vsbs-backdrop-leave-to {
+  opacity: 0;
 }
 </style>

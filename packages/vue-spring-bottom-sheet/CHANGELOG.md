@@ -1,3 +1,58 @@
+# [3.0.0-next.6](https://github.com/megaarmos/vue-spring-bottom-sheet/compare/v3.0.0-next.5...v3.0.0-next.6) (2026-02-06)
+
+
+### Bug Fixes
+
+* showSheet model does not trigger watch https://github.com/megaarmos/vue-spring-bottom-sheet/issues/37 ([a72c5ff](https://github.com/megaarmos/vue-spring-bottom-sheet/commit/a72c5ff04ac22595be0a767414e5c91dfa8865d3))
+
+# [3.0.0-next.5](https://github.com/megaarmos/vue-spring-bottom-sheet/compare/v3.0.0-next.4...v3.0.0-next.5) (2026-01-22)
+
+# [3.0.0-next.4](https://github.com/megaarmos/vue-spring-bottom-sheet/compare/v3.0.0-next.3...v3.0.0-next.4) (2026-01-14)
+
+
+### Bug Fixes
+
+* context menu disrupting mouse dragging ([afaeeed](https://github.com/megaarmos/vue-spring-bottom-sheet/commit/afaeeeda65b1d60adf9ec0ec829d5459e4e4fee1))
+
+# [3.0.0-next.3](https://github.com/megaarmos/vue-spring-bottom-sheet/compare/v3.0.0-next.2...v3.0.0-next.3) (2026-01-14)
+
+
+### Features
+
+* update dependencies ([a6b9a40](https://github.com/megaarmos/vue-spring-bottom-sheet/commit/a6b9a4038bd6ab186139f3dd5892d0b8b439596a))
+
+# [3.0.0-next.2](https://github.com/megaarmos/vue-spring-bottom-sheet/compare/v3.0.0-next.1...v3.0.0-next.2) (2026-01-14)
+
+
+### Bug Fixes
+
+* https://github.com/megaarmos/vue-spring-bottom-sheet/issues/31 ([f8cc5c1](https://github.com/megaarmos/vue-spring-bottom-sheet/commit/f8cc5c1f0d222ab9dca108133a44c2192178c040))
+
+# [3.0.0-next.1](https://github.com/megaarmos/vue-spring-bottom-sheet/compare/v2.6.0-next.1...v3.0.0-next.1) (2026-01-13)
+
+
+### Bug Fixes
+
+* ensure bottom sheet swipe-based snapping and closing only trigger when actually dragging the sheet, not scrolling content ([9c9fae9](https://github.com/megaarmos/vue-spring-bottom-sheet/commit/9c9fae986d59f3c2763660dade71fd0dd899d058))
+
+
+### BREAKING CHANGES
+
+* removed motion-v dependency
+
+# [2.6.0-next.1](https://github.com/megaarmos/vue-spring-bottom-sheet/compare/v2.5.0...v2.6.0-next.1) (2026-01-13)
+
+
+### Bug Fixes
+
+* improve initial content pan handling with total delta and threshold to prevent 0 delta issues on touch devices ([8458496](https://github.com/megaarmos/vue-spring-bottom-sheet/commit/8458496a0a2e08bd8f9a0fddc7fe8f763a5b9297))
+
+
+### Features
+
+* separate BottomSheet backdrop and sheet teleportation, removing the container div ([4e2e354](https://github.com/megaarmos/vue-spring-bottom-sheet/commit/4e2e354f536831c0751971184e06e1dd1068347e))
+* swipe support https://github.com/megaarmos/vue-spring-bottom-sheet/issues/27 ([e8641cc](https://github.com/megaarmos/vue-spring-bottom-sheet/commit/e8641cc68dc0542ee415cbdd339504e2f21060ce))
+
 # [2.5.0](https://github.com/megaarmos/vue-spring-bottom-sheet/compare/v2.4.3...v2.5.0) (2025-09-07)
 
 

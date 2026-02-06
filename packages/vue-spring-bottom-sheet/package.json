@@ -16,8 +16,6 @@
     "overlay",
     "popup",
     "vue",
-    "vueuse/motion",
-    "vueuse/gesture",
     "sheet",
     "typescript"
   ],
@@ -32,7 +30,7 @@
     "url": "https://github.com/megaarmos/vue-spring-bottom-sheet/issues"
   },
   "private": false,
-  "version": "2.5.0",
+  "version": "3.0.0-next.5",
   "type": "module",
   "exports": {
     ".": {
@@ -49,39 +47,37 @@
   "main": "./dist/index.mjs",
   "types": "dist/index.d.ts",
   "scripts": {
-    "build": "vue-tsc -b && vite build",
+    "build": "vite build",
     "dev": "vite build --watch",
     "type-check": "vue-tsc --build",
-    "lint": "eslint . --fix",
     "format": "prettier --write src/",
-    "release": "cp ../../README.md . && npm run build && npm publish --access public",
-    "prepublishOnly": "cp ../../README.md . && npm run build"
+    "release": "cp ../../README.md . && bun run build && bun run type-check && npm publish --access public",
+    "prepublishOnly": "cp ../../README.md . && bun run build && bun run type-check"
   },
   "peerDependencies": {
     "vue": ">=3.3"
   },
   "dependencies": {
-    "@vueuse/core": "^13.2.0",
-    "@vueuse/integrations": "^13.2.0",
-    "focus-trap": "^7.6.4",
-    "motion-v": "^1.5.0",
-    "remeda": "^2.21.6",
-    "vue": "^3.5.14"
+    "@vueuse/core": "^14.1.0",
+    "@vueuse/integrations": "^14.1.0",
+    "focus-trap": "^7.8.0",
+    "remeda": "^2.33.3",
+    "vue": "^3.5.26"
   },
   "devDependencies": {
-    "@types/node": "^22.15.18",
-    "@vitejs/plugin-vue": "^5.2.4",
+    "@types/node": "^25.0.8",
+    "@vitejs/plugin-vue": "^6.0.3",
     "@vue/eslint-config-prettier": "^10.2.0",
-    "@vue/eslint-config-typescript": "^14.5.0",
-    "@vue/tsconfig": "^0.7.0",
+    "@vue/eslint-config-typescript": "^14.6.0",
+    "@vue/tsconfig": "^0.8.1",
     "ajv": "^8.17.1",
-    "eslint": "^9.27.0",
-    "eslint-plugin-vue": "^10.1.0",
-    "prettier": "^3.5.3",
-    "typescript": "~5.6.3",
-    "vite": "^6.3.5",
-    "vite-plugin-dts": "4.5.3",
-    "vue-tsc": "^2.2.10"
+    "eslint": "^9.39.2",
+    "eslint-plugin-vue": "^10.6.2",
+    "prettier": "^3.7.4",
+    "typescript": "~5.9.3",
+    "vite": "^7.3.1",
+    "vite-plugin-dts": "4.5.4",
+    "vue-tsc": "^3.2.2"
   },
   "files": [
     "dist",
@@ -89,6 +85,7 @@
     "LICENSE"
   ],
   "publishConfig": {
-    "access": "public"
+    "access": "public",
+    "provenance": true
   }
 }
