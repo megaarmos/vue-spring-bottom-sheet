@@ -1,3 +1,87 @@
+# [3.0.0](https://github.com/megaarmos/vue-spring-bottom-sheet/compare/v2.5.0...v3.0.0) (2026-02-06)
+
+
+* Next ([#38](https://github.com/megaarmos/vue-spring-bottom-sheet/issues/38)) ([34270e8](https://github.com/megaarmos/vue-spring-bottom-sheet/commit/34270e88d8b49ddef80b2c57b729828a1113af19))
+
+
+### BREAKING CHANGES
+
+* removed motion-v dependency
+
+* chore(release): 3.0.0-next.1 [skip ci]
+
+# [3.0.0-next.1](https://github.com/megaarmos/vue-spring-bottom-sheet/compare/v2.6.0-next.1...v3.0.0-next.1) (2026-01-13)
+
+### Bug Fixes
+
+* ensure bottom sheet swipe-based snapping and closing only trigger when actually dragging the sheet, not scrolling content ([9c9fae9](https://github.com/megaarmos/vue-spring-bottom-sheet/commit/9c9fae986d59f3c2763660dade71fd0dd899d058))
+
+### BREAKING CHANGES
+
+* removed motion-v dependency
+
+* fix: https://github.com/megaarmos/vue-spring-bottom-sheet/issues/31
+
+* chore(release): 3.0.0-next.2 [skip ci]
+
+# [3.0.0-next.2](https://github.com/megaarmos/vue-spring-bottom-sheet/compare/v3.0.0-next.1...v3.0.0-next.2) (2026-01-14)
+
+### Bug Fixes
+
+* https://github.com/megaarmos/vue-spring-bottom-sheet/issues/31 ([f8cc5c1](https://github.com/megaarmos/vue-spring-bottom-sheet/commit/f8cc5c1f0d222ab9dca108133a44c2192178c040))
+
+* feat: update dependencies
+fix: typescript errors
+
+* chore(release): 3.0.0-next.3 [skip ci]
+
+# [3.0.0-next.3](https://github.com/megaarmos/vue-spring-bottom-sheet/compare/v3.0.0-next.2...v3.0.0-next.3) (2026-01-14)
+
+### Features
+
+* update dependencies ([a6b9a40](https://github.com/megaarmos/vue-spring-bottom-sheet/commit/a6b9a4038bd6ab186139f3dd5892d0b8b439596a))
+
+* fix: context menu disrupting mouse dragging
+
+* refactor: enhance bottom sheet functionality with drag gestures and focus management
+
+- Updated `BottomSheet.vue` to utilize new composables for better code organization and maintainability.
+
+* chore(release): 3.0.0-next.4 [skip ci]
+
+# [3.0.0-next.4](https://github.com/megaarmos/vue-spring-bottom-sheet/compare/v3.0.0-next.3...v3.0.0-next.4) (2026-01-14)
+
+### Bug Fixes
+
+* context menu disrupting mouse dragging ([afaeeed](https://github.com/megaarmos/vue-spring-bottom-sheet/commit/afaeeeda65b1d60adf9ec0ec829d5459e4e4fee1))
+
+* docs(README): updated docs
+chore: updated release config and package json
+
+* chore(release): 3.0.0-next.5 [skip ci]
+
+# [3.0.0-next.5](https://github.com/megaarmos/vue-spring-bottom-sheet/compare/v3.0.0-next.4...v3.0.0-next.5) (2026-01-22)
+
+* chore: update build and start scripts in package.json
+
+* chore: migrate to monorepo and update playground packages
+
+* fix: showSheet model does not trigger watch https://github.com/megaarmos/vue-spring-bottom-sheet/issues/37
+
+* chore: update semantic-release configuration for monorepo support and add workspace release settings
+
+* ci: remove unused plugins array from workspace release configuration
+
+* chore: add .npmrc configuration to disable workspaces update
+
+* chore(release): 3.0.0-next.6 [skip ci]
+
+# [3.0.0-next.6](https://github.com/megaarmos/vue-spring-bottom-sheet/compare/v3.0.0-next.5...v3.0.0-next.6) (2026-02-06)
+
+### Bug Fixes
+
+* showSheet model does not trigger watch https://github.com/megaarmos/vue-spring-bottom-sheet/issues/37 ([a72c5ff](https://github.com/megaarmos/vue-spring-bottom-sheet/commit/a72c5ff04ac22595be0a767414e5c91dfa8865d3))
+
 # [3.0.0-next.6](https://github.com/megaarmos/vue-spring-bottom-sheet/compare/v3.0.0-next.5...v3.0.0-next.6) (2026-02-06)
 
 
