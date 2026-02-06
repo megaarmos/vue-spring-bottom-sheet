@@ -1,3 +1,10 @@
+# [3.0.0-next.6](https://github.com/megaarmos/vue-spring-bottom-sheet/compare/v3.0.0-next.5...v3.0.0-next.6) (2026-02-06)
+
+
+### Bug Fixes
+
+* showSheet model does not trigger watch https://github.com/megaarmos/vue-spring-bottom-sheet/issues/37 ([a72c5ff](https://github.com/megaarmos/vue-spring-bottom-sheet/commit/a72c5ff04ac22595be0a767414e5c91dfa8865d3))
+
 # [3.0.0-next.5](https://github.com/megaarmos/vue-spring-bottom-sheet/compare/v3.0.0-next.4...v3.0.0-next.5) (2026-01-22)
 
 # [3.0.0-next.4](https://github.com/megaarmos/vue-spring-bottom-sheet/compare/v3.0.0-next.3...v3.0.0-next.4) (2026-01-14)
