@@ -1,7 +1,17 @@
 <script setup lang="ts">
 import type { BottomSheetProps } from './types'
 
-import { computed, nextTick, onUnmounted, ref, shallowRef, toRefs, watch, onMounted } from 'vue'
+import {
+  computed,
+  nextTick,
+  onUnmounted,
+  ref,
+  shallowRef,
+  toRefs,
+  watch,
+  onMounted,
+  toRef,
+} from 'vue'
 import { useElementBounding, useVModel, useWindowSize } from '@vueuse/core'
 import { useSnapPoints } from './composables/useSnapPoints'
 import { useDragGestures } from './composables/useDragGestures'
