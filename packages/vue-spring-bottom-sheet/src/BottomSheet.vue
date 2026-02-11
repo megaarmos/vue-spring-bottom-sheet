@@ -94,10 +94,10 @@ const {
   maxSnapPoint,
 } = useSnapPoints(snapPointsRef, height, windowHeight)
 
-const blockingRef = computed(() => props.blocking)
-const canSwipeCloseRef = computed(() => props.canSwipeClose)
-const swipeCloseThresholdRef = computed(() => props.swipeCloseThreshold)
-const expandOnContentDragRef = computed(() => props.expandOnContentDrag)
+const blockingRef = toRef(() => props.blocking)
+const canSwipeCloseRef = toRef(() => props.canSwipeClose)
+const swipeCloseThresholdRef = toRef(() => props.swipeCloseThreshold)
+const expandOnContentDragRef = toRef(() => props.expandOnContentDrag)
 const scrollLock = useSheetScrollLock({ blocking: blockingRef })
 
 const focusManagement = useFocusManagement({
@@ -278,14 +278,16 @@ defineExpose({ open, close, snapToPoint })
 
 <template>
   <Teleport :to="teleportTo" :defer="teleportDefer">
-    <Transition name="vsbs-backdrop">
-      <div
-        v-if="showSheet && blocking"
-        ref="backdrop"
-        data-vsbs-backdrop
-        @click="backdropClick()"
-      />
-    </Transition>
+    <div>
+      <Transition name="vsbs-backdrop">
+        <div
+          v-if="showSheet && blocking"
+          ref="backdrop"
+          data-vsbs-backdrop
+          @click="backdropClick()"
+        />
+      </Transition>
+    </div>
   </Teleport>
 
   <Teleport :to="teleportTo" :defer="teleportDefer">
