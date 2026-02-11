@@ -71,6 +71,7 @@ export function useDragGestures(options: UseDragGesturesOptions) {
   const lastDragY = ref(0)
   const isFirstContentMove = ref(true)
   const preventContentScroll = ref(true)
+  const heightToTranslateDelta = ref<number | null>(null)
 
   const swipe = useSwipeDetection({ velocityThreshold: DEFAULT_VELOCITY_THRESHOLD })
 
@@ -182,6 +183,7 @@ export function useDragGestures(options: UseDragGesturesOptions) {
     dragStartHeight.value = height.value
     dragStartTranslateY.value = translateY.value
     lastDragY.value = event.clientY
+    heightToTranslateDelta.value = null
 
     swipe.start(event.clientY)
     ;(event.target as HTMLElement).setPointerCapture(event.pointerId)
@@ -203,7 +205,11 @@ export function useDragGestures(options: UseDragGesturesOptions) {
 
     if (height.value <= minSnapPoint.value) {
       height.value = minSnapPoint.value
-      translateY.value = dragStartTranslateY.value + deltaY
+
+      if (heightToTranslateDelta.value === null) {
+        heightToTranslateDelta.value = deltaY
+      }
+      translateY.value = deltaY - heightToTranslateDelta.value
 
       if (canSwipeClose.value) {
         translateY.value = clamp(translateY.value, { min: 0 })
@@ -310,6 +316,7 @@ export function useDragGestures(options: UseDragGesturesOptions) {
     dragStartHeight.value = height.value
     dragStartTranslateY.value = translateY.value
     lastDragY.value = event.clientY
+    heightToTranslateDelta.value = null
     isFirstContentMove.value = true
 
     swipe.start(event.clientY)
@@ -352,7 +359,10 @@ export function useDragGestures(options: UseDragGesturesOptions) {
       height.value = minSnapPoint.value
 
       if (preventContentScroll.value && expandOnContentDrag.value) {
-        translateY.value = dragStartTranslateY.value + deltaY
+        if (heightToTranslateDelta.value === null) {
+          heightToTranslateDelta.value = deltaY
+        }
+        translateY.value = deltaY - heightToTranslateDelta.value
       }
 
       translateY.value = clamp(translateY.value, { min: 0, max: minSnapPoint.value })
