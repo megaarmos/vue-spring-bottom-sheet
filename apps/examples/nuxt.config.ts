@@ -6,10 +6,6 @@ export default defineNuxtConfig({
     enabled: true,
   },
 
-  devServer: {
-    port: 3001,
-  },
-
   css: ['@douxcode/vue-spring-bottom-sheet/dist/style.css', '~/assets/css/main.css'],
 
   routeRules: {
