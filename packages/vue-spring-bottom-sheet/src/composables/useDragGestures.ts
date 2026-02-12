@@ -72,6 +72,8 @@ export function useDragGestures(options: UseDragGesturesOptions) {
   const isFirstContentMove = ref(true)
   const preventContentScroll = ref(true)
   const heightToTranslateDelta = ref<number | null>(null)
+  const activeDragMode = ref<'header' | 'content' | null>(null)
+  const isUsingTouchFallback = ref(false)
 
   const swipe = useSwipeDetection({ velocityThreshold: DEFAULT_VELOCITY_THRESHOLD })
 
@@ -179,6 +181,7 @@ export function useDragGestures(options: UseDragGesturesOptions) {
     captureCurrentState()
 
     isDragging.value = true
+    activeDragMode.value = 'header'
     dragStartY.value = event.clientY
     dragStartHeight.value = height.value
     dragStartTranslateY.value = translateY.value
@@ -191,7 +194,7 @@ export function useDragGestures(options: UseDragGesturesOptions) {
 
   const handlePan = (event: PointerEvent) => {
     if (!isDragging.value) return
-    if (event.buttons !== 1) {
+    if (event.pointerType === 'mouse' && event.buttons !== 1) {
       handlePanEnd(event)
       return
     }
@@ -239,8 +242,15 @@ export function useDragGestures(options: UseDragGesturesOptions) {
     lastDragY.value = currentY
   }
 
-  const handlePanEnd = (event: PointerEvent) => {
+  const finalizePanEnd = () => {
     isDragging.value = false
+    activeDragMode.value = null
+    isUsingTouchFallback.value = false
+    removeTouchFallback()
+  }
+
+  const handlePanEnd = (event: PointerEvent) => {
+    finalizePanEnd()
     ;(event.target as HTMLElement).releasePointerCapture(event.pointerId)
 
     if (canSwipeClose.value) {
@@ -312,6 +322,7 @@ export function useDragGestures(options: UseDragGesturesOptions) {
     captureCurrentState()
 
     isDragging.value = true
+    activeDragMode.value = 'content'
     dragStartY.value = event.clientY
     dragStartHeight.value = height.value
     dragStartTranslateY.value = translateY.value
@@ -325,7 +336,7 @@ export function useDragGestures(options: UseDragGesturesOptions) {
 
   const handleContentPan = (event: PointerEvent) => {
     if (!isDragging.value) return
-    if (event.buttons !== 1) {
+    if (event.pointerType === 'mouse' && event.buttons !== 1) {
       handleContentPanEnd(event)
       return
     }
@@ -401,7 +412,7 @@ export function useDragGestures(options: UseDragGesturesOptions) {
   }
 
   const handleContentPanEnd = (event: PointerEvent) => {
-    isDragging.value = false
+    finalizePanEnd()
     isFirstContentMove.value = true
     ;(event.target as HTMLElement).releasePointerCapture(event.pointerId)
 
@@ -430,11 +441,175 @@ export function useDragGestures(options: UseDragGesturesOptions) {
   const handleContextMenu = (event: MouseEvent) => {
     if (isDragging.value) {
       event.preventDefault()
-      isDragging.value = false
+      finalizePanEnd()
       isFirstContentMove.value = true
       snapToClosestPoint()
     }
   }
+
+  // --- Touch event fallback for when pointercancel fires ---
+  // Touch events always fire regardless of pointer cancellation,
+  // so we can use them to continue tracking the gesture.
+
+  const handleTouchMoveFallback = (e: TouchEvent) => {
+    e.preventDefault()
+    const touch = e.touches[0]
+    if (!touch || !isDragging.value) return
+
+    const clientY = touch.clientY
+
+    if (activeDragMode.value === 'header') {
+      // Reuse header pan logic
+      const deltaY = clientY - dragStartY.value
+      const currentY = clientY
+
+      if (translateY.value <= 0) {
+        height.value = dragStartHeight.value - deltaY
+      }
+
+      if (height.value <= minSnapPoint.value) {
+        height.value = minSnapPoint.value
+        if (heightToTranslateDelta.value === null) {
+          heightToTranslateDelta.value = deltaY
+        }
+        translateY.value = deltaY - heightToTranslateDelta.value
+        if (canSwipeClose.value) {
+          translateY.value = clamp(translateY.value, { min: 0 })
+        } else {
+          translateY.value = clamp(
+            rubberbandIfOutOfBounds(
+              translateY.value,
+              -sheetHeight.value,
+              0,
+              RUBBERBAND_ELASTICITY_STRONG,
+            ),
+            { min: 0 },
+          )
+        }
+      }
+
+      height.value = clamp(
+        rubberbandIfOutOfBounds(height.value, 0, maxSnapPoint.value, RUBBERBAND_ELASTICITY),
+        { min: 0, max: windowHeight.value },
+      )
+
+      emitDragDirection(clientY - lastDragY.value)
+      swipe.update(clientY)
+      lastDragY.value = currentY
+    } else if (activeDragMode.value === 'content') {
+      // Reuse content pan logic
+      const deltaY = clientY - dragStartY.value
+      const currentY = clientY
+      const moveDelta = clientY - lastDragY.value
+
+      if (isFirstContentMove.value) {
+        const totalDelta = clientY - dragStartY.value
+        if (Math.abs(totalDelta) > MOVEMENT_THRESHOLD_PX) {
+          isFirstContentMove.value = false
+          handleContentPanStartLogic(totalDelta)
+        } else {
+          lastDragY.value = currentY
+          return
+        }
+      }
+
+      if (translateY.value === 0 && preventContentScroll.value && expandOnContentDrag.value) {
+        height.value = dragStartHeight.value - deltaY
+      }
+
+      if (height.value <= minSnapPoint.value) {
+        height.value = minSnapPoint.value
+        if (preventContentScroll.value && expandOnContentDrag.value) {
+          if (heightToTranslateDelta.value === null) {
+            heightToTranslateDelta.value = deltaY
+          }
+          translateY.value = deltaY - heightToTranslateDelta.value
+        }
+        translateY.value = clamp(translateY.value, { min: 0, max: minSnapPoint.value })
+        if (canSwipeClose.value) {
+          translateY.value = clamp(translateY.value, { min: 0 })
+        } else {
+          translateY.value = clamp(
+            rubberbandIfOutOfBounds(
+              translateY.value,
+              -sheetHeight.value,
+              0,
+              RUBBERBAND_ELASTICITY_STRONG,
+            ),
+            { min: 0 },
+          )
+        }
+      }
+
+      if (height.value > maxSnapPoint.value) {
+        height.value = maxSnapPoint.value
+      }
+      height.value = clamp(height.value, { max: windowHeight.value })
+
+      const hasSingleSnapPoint = flattenedSnapPoints.value.length === 1
+      if (!hasSingleSnapPoint) {
+        if (height.value === maxSnapPoint.value) {
+          preventContentScroll.value = false
+        }
+      }
+
+      emitDragDirection(moveDelta)
+      swipe.update(clientY)
+      lastDragY.value = currentY
+    }
+  }
+
+  const handleTouchEndFallback = () => {
+    if (!isDragging.value) return
+
+    const wasHeader = activeDragMode.value === 'header'
+    finalizePanEnd()
+    isFirstContentMove.value = true
+
+    if (canSwipeClose.value) {
+      const threshold = calculateSwipeThreshold(swipeCloseThreshold.value, height.value)
+      if (translateY.value > threshold) {
+        translateY.value = height.value
+        onClose()
+        return
+      }
+    } else {
+      translateY.value = 0
+    }
+
+    if (translateY.value === height.value) {
+      translateY.value = 0
+      onClose()
+      return
+    }
+
+    const wasActuallyDragging = wasHeader || preventContentScroll.value
+    handleSnapAfterPan(wasActuallyDragging)
+  }
+
+  const installTouchFallback = () => {
+    document.addEventListener('touchmove', handleTouchMoveFallback, { passive: false })
+    document.addEventListener('touchend', handleTouchEndFallback)
+    document.addEventListener('touchcancel', handleTouchEndFallback)
+  }
+
+  const removeTouchFallback = () => {
+    document.removeEventListener('touchmove', handleTouchMoveFallback)
+    document.removeEventListener('touchend', handleTouchEndFallback)
+    document.removeEventListener('touchcancel', handleTouchEndFallback)
+  }
+
+  const handlePointerCancel = (event: PointerEvent) => {
+    // Don't end the drag — switch to touch event fallback
+    // Touch events always fire even after pointer events are cancelled
+    ;(event.target as HTMLElement).releasePointerCapture(event.pointerId)
+    isUsingTouchFallback.value = true
+    installTouchFallback()
+  }
+
+  const contentTouchAction = computed(() => {
+    return preventContentScroll.value ? 'none' : 'pan-y'
+  })
 
   const handleTouchMove = (event: TouchEvent) => {
     preventContentScroll.value = true
@@ -442,7 +617,7 @@ export function useDragGestures(options: UseDragGesturesOptions) {
   }
 
   const handleSheetScroll = (event: TouchEvent) => {
-    if (preventContentScroll.value) {
+    if (preventContentScroll.value || isUsingTouchFallback.value) {
       event.preventDefault()
     }
   }
@@ -457,7 +632,7 @@ export function useDragGestures(options: UseDragGesturesOptions) {
     onPointerdown: handlePanStart,
     onPointermove: handlePan,
     onPointerup: handlePanEnd,
-    onPointercancel: handlePanEnd,
+    onPointercancel: handlePointerCancel,
     onContextmenu: handleContextMenu,
     onTouchmove: handleTouchMove,
   }))
@@ -466,7 +641,7 @@ export function useDragGestures(options: UseDragGesturesOptions) {
     onPointerdown: handleContentPanStart,
     onPointermove: handleContentPan,
     onPointerup: handleContentPanEnd,
-    onPointercancel: handleContentPanEnd,
+    onPointercancel: handlePointerCancel,
     onContextmenu: handleContextMenu,
     onTouchmove: handleSheetScroll,
   }))
@@ -474,6 +649,7 @@ export function useDragGestures(options: UseDragGesturesOptions) {
   return {
     isDragging,
     preventContentScroll,
+    contentTouchAction,
     headerFooterHandlers,
     contentWrapperHandlers,
     scrollEnd,

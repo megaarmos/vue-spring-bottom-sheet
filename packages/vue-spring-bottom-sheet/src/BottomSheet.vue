@@ -107,7 +107,7 @@ const focusManagement = useFocusManagement({
   onEscape: () => close(),
 })
 
-const { isDragging, headerFooterHandlers, contentWrapperHandlers, scrollEnd } = useDragGestures({
+const { isDragging, contentTouchAction, headerFooterHandlers, contentWrapperHandlers, scrollEnd } = useDragGestures({
   sheetRef: sheet,
   sheetScrollRef: sheetScroll,
   height,
@@ -323,7 +323,7 @@ defineExpose({ open, close, snapToPoint })
           <div
             data-vsbs-content-wrapper
             v-bind="contentWrapperHandlers"
-            :style="{ touchAction: 'pan-y' }"
+            :style="{ touchAction: contentTouchAction }"
           >
             <div ref="sheetContent" data-vsbs-content :class="contentClass">
               <slot />
