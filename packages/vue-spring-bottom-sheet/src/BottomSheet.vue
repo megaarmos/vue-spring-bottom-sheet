@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { BottomSheetProps } from './types'
 
-import { computed, nextTick, onUnmounted, ref, shallowRef, toRefs, watch, onMounted } from 'vue'
+import { computed, nextTick, onMounted, onUnmounted, ref, shallowRef, toRefs, watch } from 'vue'
 import { useElementBounding, useVModel, useWindowSize } from '@vueuse/core'
 import { useSnapPoints } from './composables/useSnapPoints'
 import { useDragGestures } from './composables/useDragGestures'
@@ -36,13 +36,7 @@ const showSheet = useVModel(props, 'modelValue', emit, {
   passive: true,
 })
 
-watch(showSheet, (value) => {
-  value ? open() : close()
-})
-
-onMounted(() => {
-  if (showSheet.value) open()
-})
+// ── Template refs ─────────────────────────────────────────────────────────────
 
 const sheet = shallowRef<HTMLElement | null>(null)
 const sheetHeader = shallowRef<HTMLElement | null>(null)
@@ -50,6 +44,8 @@ const sheetFooter = shallowRef<HTMLElement | null>(null)
 const sheetScroll = shallowRef<HTMLElement | null>(null)
 const sheetContent = shallowRef<HTMLElement | null>(null)
 const backdrop = shallowRef<HTMLElement | null>(null)
+
+// ── Dimensions ────────────────────────────────────────────────────────────────
 
 const { height: windowHeight } = useWindowSize()
 const { height: sheetHeight } = useElementBounding(sheet)
@@ -70,9 +66,13 @@ const setInstinctHeights = (header: number, content: number, footer: number) => 
   sheetFooterHeight.value = footer
 }
 
+// ── Sheet geometry ────────────────────────────────────────────────────────────
+
 const height = ref(0)
 const translateY = ref(0)
 const durationCss = computed(() => props.duration + 'ms')
+
+// ── Snap points ───────────────────────────────────────────────────────────────
 
 const { snapPoints: propSnapPoints } = toRefs(props)
 const snapPointsRef = computed(() => propSnapPoints.value ?? [instinctHeight.value])
@@ -88,6 +88,7 @@ const blockingRef = computed(() => props.blocking)
 const canSwipeCloseRef = computed(() => props.canSwipeClose)
 const swipeCloseThresholdRef = computed(() => props.swipeCloseThreshold)
 const expandOnContentDragRef = computed(() => props.expandOnContentDrag)
+
 const scrollLock = useSheetScrollLock({ blocking: blockingRef })
 
 const focusManagement = useFocusManagement({
@@ -119,8 +120,41 @@ const { isDragging, headerFooterHandlers, contentWrapperHandlers, scrollEnd } = 
   onDraggingDown: () => emit('dragging-down'),
 })
 
+// ── State flags ───────────────────────────────────────────────────────────────
+
 const isOpening = ref(false)
 const isClosing = ref(false)
+
+// ── Centralized handlers ──────────────────────────────────────────────────────
+
+/**
+ * Activate or deactivate the focus trap based on intent and current state.
+ * - Activates focus trap + escape-key listener when shouldActivate=true, the sheet
+ *   is visible, and blocking=true (useFocusManagement enforces the blocking check).
+ * - Deactivates and tears down listeners when shouldActivate=false.
+ */
+const handleFocusTrap = (shouldActivate: boolean): void => {
+  if (shouldActivate && showSheet.value) {
+    focusManagement.activate()
+  } else {
+    focusManagement.deactivate()
+  }
+}
+
+/**
+ * Lock or unlock body scroll based on intent and current state.
+ * - Locks when shouldLock=true, the sheet is visible, AND blocking=true.
+ * - Unlocks unconditionally otherwise (unlock is idempotent when already unlocked).
+ */
+const handleScrollLock = (shouldLock: boolean): void => {
+  if (shouldLock && showSheet.value && props.blocking) {
+    scrollLock.lock()
+  } else {
+    scrollLock.unlock()
+  }
+}
+
+// ── Open / Close ──────────────────────────────────────────────────────────────
 
 const backdropClick = () => {
   if (props.canBackdropClose) close()
@@ -133,7 +167,7 @@ const open = async () => {
   isOpening.value = true
   emit('opening-started')
 
-  scrollLock.lockIfBlocking()
+  handleScrollLock(true)
 
   await nextTick()
 
@@ -181,7 +215,7 @@ const open = async () => {
       setTimeout(() => {
         if (showSheet.value) {
           emit('opened')
-          focusManagement.activate()
+          handleFocusTrap(true)
         }
       }, props.duration)
     }
@@ -197,8 +231,8 @@ const close = () => {
   isClosing.value = true
   emit('closing-started')
 
-  scrollLock.unlockIfBlocking()
-  focusManagement.deactivate()
+  handleScrollLock(false)
+  handleFocusTrap(false)
 
   translateY.value = height.value
 
@@ -207,6 +241,8 @@ const close = () => {
     isClosing.value = false
   }, props.duration)
 }
+
+// ── Snap-point helpers ────────────────────────────────────────────────────────
 
 const snapToPoint = (index: number) => {
   if (!snapPointsRef.value) return
@@ -228,6 +264,22 @@ const snapToPoint = (index: number) => {
 const debouncedSnapToPoint = funnel((index) => snapToPoint(index), {
   minQuietPeriodMs: props.duration,
   reducer: (_prev: number | undefined, index: number) => index,
+})
+
+// ── Watchers ──────────────────────────────────────────────────────────────────
+
+watch(showSheet, (value) => {
+  value ? open() : close()
+})
+
+// Re-synchronize focus trap and scroll lock whenever `blocking` toggles while
+// the sheet is already open. nextTick ensures blockingRef has settled before
+// the handlers read props.blocking / useFocusManagement's blocking ref.
+watch(blockingRef, async (newBlocking) => {
+  if (!showSheet.value) return
+  await nextTick()
+  handleScrollLock(newBlocking)
+  handleFocusTrap(newBlocking)
 })
 
 watch(snapPointsRef, (value, oldValue) => {
@@ -253,9 +305,17 @@ watch(instinctHeight, (value) => {
   emit('instinctHeight', value)
 })
 
+// ── Lifecycle ─────────────────────────────────────────────────────────────────
+
+onMounted(() => {
+  if (showSheet.value) open()
+})
+
 onUnmounted(() => {
   focusManagement.cleanup()
 })
+
+// ── Transition hooks ──────────────────────────────────────────────────────────
 
 const onLeave = (el: Element) => {
   const element = el as HTMLElement
