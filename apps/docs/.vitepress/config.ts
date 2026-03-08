@@ -17,7 +17,7 @@ export default defineConfig({
       { text: 'Home', link: '/' },
       { text: 'Guide', link: '/guide/installation' },
       { text: 'API', link: '/guide/props' },
-      { text: 'Examples', link: '/examples' },
+      // { text: 'Examples', link: '/examples' },
     ],
 
     sidebar: {

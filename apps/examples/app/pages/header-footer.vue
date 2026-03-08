@@ -9,7 +9,7 @@ const close = () => bottomSheet.value?.close()
 </script>
 
 <template>
-  <div>
+  <UContainer>
     <UPageHeader
       title="With Header and Footer"
       description="Using slots for complete layout control."
@@ -17,50 +17,27 @@ const close = () => bottomSheet.value?.close()
     />
 
     <UCard class="mt-6">
-      <UButton @click="open">
-        Subscribe
-      </UButton>
+      <UButton @click="open"> Subscribe </UButton>
 
       <ClientOnly>
         <BottomSheet ref="bottomSheet">
           <template #header>
-            <div class="text-center py-4">
-              <h3 class="font-semibold text-lg m-0">
-                Newsletter
-              </h3>
-            </div>
+            <h3 class="font-semibold text-lg m-0">Newsletter</h3>
           </template>
 
           <div class="space-y-4">
             <p>Subscribe to our newsletter for updates!</p>
-            <UInput
-              v-model="email"
-              type="email"
-              placeholder="Enter your email"
-              class="w-full"
-            />
+            <UInput v-model="email" type="email" placeholder="Enter your email" class="w-full" />
           </div>
 
           <template #footer>
             <div class="flex gap-4">
-              <UButton
-                variant="outline"
-                color="neutral"
-                block
-                @click="close"
-              >
-                Cancel
-              </UButton>
-              <UButton
-                block
-                @click="close"
-              >
-                Subscribe
-              </UButton>
+              <UButton variant="outline" color="neutral" block @click="close"> Cancel </UButton>
+              <UButton block @click="close"> Subscribe </UButton>
             </div>
           </template>
         </BottomSheet>
       </ClientOnly>
     </UCard>
-  </div>
+  </UContainer>
 </template>

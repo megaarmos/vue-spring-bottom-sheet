@@ -3,12 +3,12 @@ import { ref, useTemplateRef } from 'vue'
 import BottomSheet from '@douxcode/vue-spring-bottom-sheet'
 
 const bottomSheet = useTemplateRef<InstanceType<typeof BottomSheet>>('bottomSheet')
-const selectedImage = ref<{ id: number, src: string, title: string } | null>(null)
+const selectedImage = ref<{ id: number; src: string; title: string } | null>(null)
 
 const images = [
   { id: 1, src: 'https://picsum.photos/seed/1/800/600', title: 'Image 1' },
   { id: 2, src: 'https://picsum.photos/seed/2/800/600', title: 'Image 2' },
-  { id: 3, src: 'https://picsum.photos/seed/3/800/600', title: 'Image 3' }
+  { id: 3, src: 'https://picsum.photos/seed/3/800/600', title: 'Image 3' },
 ]
 
 const openImage = (image: (typeof images)[number]) => {
@@ -18,7 +18,7 @@ const openImage = (image: (typeof images)[number]) => {
 </script>
 
 <template>
-  <div>
+  <UContainer>
     <UPageHeader
       title="Image Gallery Example"
       description="Display images in a bottom sheet."
@@ -34,17 +34,15 @@ const openImage = (image: (typeof images)[number]) => {
           :alt="image.title"
           class="w-24 h-24 object-cover rounded-lg cursor-pointer hover:opacity-90 transition-opacity"
           @click="openImage(image)"
-        >
+        />
       </div>
 
       <ClientOnly>
         <BottomSheet ref="bottomSheet" :snap-points="['80%']">
           <template #header>
-            <div class="py-4 text-center">
-              <h3 class="font-semibold text-lg m-0">
-                {{ selectedImage?.title }}
-              </h3>
-            </div>
+            <h3 class="font-semibold text-lg m-0">
+              {{ selectedImage?.title }}
+            </h3>
           </template>
 
           <div v-if="selectedImage" class="space-y-4">
@@ -52,13 +50,11 @@ const openImage = (image: (typeof images)[number]) => {
               :src="selectedImage.src"
               :alt="selectedImage.title"
               class="w-full h-auto rounded-lg"
-            >
-            <p class="text-muted text-sm">
-              Click the image or swipe down to close.
-            </p>
+            />
+            <p class="text-muted text-sm">Click the image or swipe down to close.</p>
           </div>
         </BottomSheet>
       </ClientOnly>
     </UCard>
-  </div>
+  </UContainer>
 </template>

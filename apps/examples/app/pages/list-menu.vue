@@ -7,7 +7,7 @@ const bottomSheet = useTemplateRef<InstanceType<typeof BottomSheet>>('bottomShee
 const actions = [
   { label: 'Share', icon: '🔗' },
   { label: 'Edit', icon: '✏️' },
-  { label: 'Delete', icon: '🗑️', danger: true }
+  { label: 'Delete', icon: '🗑️', danger: true },
 ]
 
 const handleAction = (action: (typeof actions)[number]) => {
@@ -20,7 +20,7 @@ const close = () => bottomSheet.value?.close()
 </script>
 
 <template>
-  <div>
+  <UContainer>
     <UPageHeader
       title="List/Menu Example"
       description="Perfect for action sheets and menus."
@@ -28,18 +28,12 @@ const close = () => bottomSheet.value?.close()
     />
 
     <UCard class="mt-6">
-      <UButton @click="open">
-        Show Actions
-      </UButton>
+      <UButton @click="open"> Show Actions </UButton>
 
       <ClientOnly>
-        <BottomSheet ref="bottomSheet" :snap-points="[300]">
+        <BottomSheet ref="bottomSheet">
           <template #header>
-            <div class="text-center py-4 border-b border-default">
-              <h3 class="font-semibold text-lg m-0">
-                Actions
-              </h3>
-            </div>
+            <h3 class="font-semibold text-lg m-0">Actions</h3>
           </template>
 
           <div class="flex flex-col">
@@ -58,18 +52,11 @@ const close = () => bottomSheet.value?.close()
 
           <template #footer>
             <div class="p-4">
-              <UButton
-                variant="outline"
-                color="neutral"
-                block
-                @click="close"
-              >
-                Cancel
-              </UButton>
+              <UButton variant="outline" color="neutral" block @click="close"> Cancel </UButton>
             </div>
           </template>
         </BottomSheet>
       </ClientOnly>
     </UCard>
-  </div>
+  </UContainer>
 </template>

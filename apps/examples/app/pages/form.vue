@@ -7,7 +7,7 @@ const bottomSheet = useTemplateRef<InstanceType<typeof BottomSheet>>('bottomShee
 const formData = ref({
   name: '',
   email: '',
-  message: ''
+  message: '',
 })
 
 const submitForm = () => {
@@ -20,7 +20,7 @@ const open = () => bottomSheet.value?.open()
 </script>
 
 <template>
-  <div>
+  <UContainer>
     <UPageHeader
       title="Form Example"
       description="A sheet containing a complete form."
@@ -28,51 +28,31 @@ const open = () => bottomSheet.value?.open()
     />
 
     <UCard class="mt-6">
-      <UButton @click="open">
-        Contact Us
-      </UButton>
+      <UButton @click="open"> Contact Us </UButton>
 
       <ClientOnly>
         <BottomSheet ref="bottomSheet" :snap-points="['90%']">
           <template #header>
-            <div class="py-4 border-b border-default">
-              <h3 class="font-semibold text-lg m-0">
-                Contact Form
-              </h3>
-            </div>
+            <h3 class="font-semibold text-lg m-0">Contact Form</h3>
           </template>
 
           <form class="space-y-4" @submit.prevent="submitForm">
             <UFormField label="Name" required>
-              <UInput
-                v-model="formData.name"
-                type="text"
-                required
-              />
+              <UInput v-model="formData.name" type="text" required />
             </UFormField>
 
             <UFormField label="Email" required>
-              <UInput
-                v-model="formData.email"
-                type="email"
-                required
-              />
+              <UInput v-model="formData.email" type="email" required />
             </UFormField>
 
             <UFormField label="Message" required>
-              <UTextarea
-                v-model="formData.message"
-                required
-                :rows="4"
-              />
+              <UTextarea v-model="formData.message" required :rows="4" />
             </UFormField>
 
-            <UButton type="submit" block>
-              Send Message
-            </UButton>
+            <UButton type="submit" block> Send Message </UButton>
           </form>
         </BottomSheet>
       </ClientOnly>
     </UCard>
-  </div>
+  </UContainer>
 </template>

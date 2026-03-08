@@ -39,26 +39,6 @@
         "vue-tsc": "^3.2.4",
       },
     },
-    "apps/playground": {
-      "name": "playground",
-      "dependencies": {
-        "@douxcode/vue-spring-bottom-sheet": "workspace:*",
-        "@iconify-json/lucide": "^1.2.86",
-        "@iconify-json/simple-icons": "^1.2.67",
-        "@nuxt/ui": "^4.4.0",
-        "nuxt": "^4.2.2",
-        "tailwindcss": "^4.1.18",
-      },
-      "devDependencies": {
-        "@nuxt/eslint": "^1.12.1",
-        "eslint": "^9.39.2",
-        "eslint-config-prettier": "^10.1.8",
-        "eslint-plugin-prettier": "^5.5.5",
-        "prettier": "^3.8.1",
-        "typescript": "^5.9.3",
-        "vue-tsc": "^3.2.2",
-      },
-    },
     "packages/vue-spring-bottom-sheet": {
       "name": "@douxcode/vue-spring-bottom-sheet",
       "version": "3.0.0-next.5",
@@ -2195,8 +2175,6 @@
     "pkg-conf": ["pkg-conf@2.1.0", "", { "dependencies": { "find-up": "^2.0.0", "load-json-file": "^4.0.0" } }, "sha512-C+VUP+8jis7EsQZIhDYmS5qlNtjv2yP4SNtjXK9AP1ZcTRlnSfuumaTnRfYZnYgUUYVIKqL0fRvmUGDV2fmp6g=="],
 
     "pkg-types": ["pkg-types@2.3.0", "", { "dependencies": { "confbox": "^0.2.2", "exsolve": "^1.0.7", "pathe": "^2.0.3" } }, "sha512-SIqCzDRg0s9npO5XQ3tNZioRY1uK06lA41ynBC1YmFTmnY6FjUjVt6s4LoADmwoig1qqD0oK8h1p/8mlMx8Oig=="],
-
-    "playground": ["playground@workspace:apps/playground"],
 
     "pluralize": ["pluralize@8.0.0", "", {}, "sha512-Nc3IT5yHzflTfbjgqWcCPpo7DaKy4FnpB0l/zCAW0Tc7jxAiuqSxHasntB3D7887LSrA93kDJ9IXovxJYxyLCA=="],
 

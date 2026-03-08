@@ -7,7 +7,7 @@ const open = () => bottomSheet.value?.open()
 </script>
 
 <template>
-  <div>
+  <UContainer>
     <UPageHeader
       title="Basic Example"
       description="The simplest implementation with default settings."
@@ -15,20 +15,14 @@ const open = () => bottomSheet.value?.open()
     />
 
     <UCard class="mt-6">
-      <UButton @click="open">
-        Open Sheet
-      </UButton>
+      <UButton @click="open"> Open Sheet </UButton>
 
       <ClientOnly>
-        <BottomSheet ref="bottomSheet">
-          <h2 class="text-xl font-semibold mb-2">
-            Basic Example
-          </h2>
-          <p class="text-muted">
-            This is a simple bottom sheet with default settings.
-          </p>
+        <BottomSheet ref="bottomSheet" :snap-points="[300]">
+          <h2 class="text-xl font-semibold mb-2">Basic Example</h2>
+          <p class="text-muted">This is a simple bottom sheet with default settings.</p>
         </BottomSheet>
       </ClientOnly>
     </UCard>
-  </div>
+  </UContainer>
 </template>
