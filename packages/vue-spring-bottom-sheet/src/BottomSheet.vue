@@ -1,18 +1,14 @@
 <script setup lang="ts">
 import type { BottomSheetProps } from './types'
 
-import { computed, nextTick, onUnmounted, ref, shallowRef, watch, onMounted, toRef } from 'vue'
+import { computed, nextTick, onMounted, onUnmounted, ref, shallowRef, toRef, watch } from 'vue'
 import { useElementBounding, useVModel, useWindowSize } from '@vueuse/core'
-import { useSnapPoints } from './composables/useSnapPoints'
-import { useSheetScrollLock } from './composables/useSheetScrollLock'
-import { useFocusManagement } from './composables/useFocusManagement'
 import { clamp, funnel } from 'remeda'
+import { useDragGestures } from './composables/useDragGestures'
+import { useFocusManagement } from './composables/useFocusManagement'
+import { useSheetScrollLock } from './composables/useSheetScrollLock'
+import { useSnapPoints } from './composables/useSnapPoints'
 import { resolveSnapPoint } from './utils/resolveSnapPoint'
-import { RUBBERBAND_ELASTICITY, SNAP_POINT_TOLERANCE_PX } from './utils/constants'
-import { rubberbandIfOutOfBounds } from './utils/rubberbandIfOutOfBounds'
-import { calculateSwipeThreshold } from './utils/calculateSwipeThreshold'
-import { useSwipeDetection } from './composables/useSwipeDetection'
-import { isInteractable } from './utils/isInteractable'
 
 const props = withDefaults(defineProps<BottomSheetProps>(), {
   blocking: true,
@@ -89,7 +85,9 @@ const setInstinctHeights = (header: number, content: number, footer: number) => 
 const height = ref(0)
 const translateY = ref(0)
 const renderedSheetHeight = computed(() => {
-  return clamp(height.value + keyboardInsetBottom.value, { max: windowHeight.value })
+  return clamp(height.value + keyboardInsetBottom.value, {
+    max: windowHeight.value,
+  })
 })
 const durationCss = computed(() => props.duration + 'ms')
 
@@ -116,13 +114,8 @@ const focusManagement = useFocusManagement({
   onEscape: () => close(),
 })
 
-const swipe = useSwipeDetection()
-
 const isOpening = shallowRef(false)
 const isClosing = shallowRef(false)
-
-const isDragging = shallowRef(false)
-let preventContentScroll = true
 
 const backdropClick = () => {
   if (props.canBackdropClose) close()
@@ -255,10 +248,40 @@ const snapToPoint = (index: number) => {
   emit('snapped', snapPointsRef.value.indexOf(snapValue))
 }
 
+const {
+  isDragging,
+  handleSheetScroll,
+  handlePointerDown,
+  handleContentPointerDown,
+  handlePointerMove,
+  handleContentPointerMove,
+  handleLostPointerCapture,
+  handleTouchStart,
+} = useDragGestures({
+  sheetHeaderRef: sheetHeader,
+  sheetFooterRef: sheetFooter,
+  sheetContentRef: sheetContent,
+  sheetScrollRef: sheetScroll,
+  height,
+  translateY,
+  minSnapPoint,
+  maxSnapPoint,
+  closestSnapPointIndex,
+  flattenedSnapPoints,
+  canSwipeClose: canSwipeCloseRef,
+  expandOnContentDrag: expandOnContentDragRef,
+  swipeCloseThreshold: swipeCloseThresholdRef,
+  onClose: close,
+  onSnapToPoint: snapToPoint,
+  onDraggingUp: () => emit('dragging-up'),
+  onDraggingDown: () => emit('dragging-down'),
+})
+
 const debouncedSnapToPoint = funnel((index) => snapToPoint(index), {
   minQuietPeriodMs: props.duration,
   reducer: (_prev: number | undefined, index: number) => index,
 })
+
 watch(snapPointsRef, (value, oldValue) => {
   if (showSheet.value === false) return
 
@@ -273,280 +296,6 @@ watch(snapPointsRef, (value, oldValue) => {
 
   height.value = clamp(currentSnapPoint, { max: windowHeight.value })
 })
-
-const emitDragDirection = (movementY: number) => {
-  if (movementY > 0) {
-    emit('dragging-down')
-  } else if (movementY < 0) {
-    emit('dragging-up')
-  }
-}
-
-const handleSheetScroll = (event: TouchEvent) => {
-  if (typeof event.cancelable !== 'boolean' || event.cancelable) {
-    if (preventContentScroll) {
-      event.preventDefault()
-    }
-  } else {
-    console.warn(`The following event couldn't be canceled:`)
-  }
-}
-
-let heightAccumulator: number
-let translateYAccumulator: number
-let hasDismissedFocusOnDrag = false
-
-const dismissFocusOnDragStart = () => {
-  if (hasDismissedFocusOnDrag) return
-
-  const activeElement = document.activeElement
-  if (!(activeElement instanceof HTMLElement)) return
-  if (activeElement === document.body) return
-
-  activeElement.blur()
-  hasDismissedFocusOnDrag = true
-}
-
-const handlePointerDown = (event: PointerEvent, type: 'header' | 'footer') => {
-  if (!sheetHeader.value) return
-  if (event.button !== 0) return
-
-  heightAccumulator = height.value
-  translateYAccumulator = translateY.value
-
-  hasDismissedFocusOnDrag = false
-  isDragging.value = true
-
-  swipe.start(event.clientY)
-  if (type === 'header') {
-    sheetHeader.value?.setPointerCapture(event.pointerId)
-  } else {
-    sheetFooter.value?.setPointerCapture(event.pointerId)
-  }
-}
-
-let contentStartY = 0
-const handleContentPointerDown = (event: PointerEvent) => {
-  if (!sheetHeader.value) return
-  if (event.button !== 0) return
-  if (expandOnContentDragRef.value === false) return
-  if (isInteractable(event.target as Element)) return
-
-  heightAccumulator = height.value
-  translateYAccumulator = translateY.value
-  contentStartY = event.clientY
-
-  hasDismissedFocusOnDrag = false
-  isDragging.value = true
-
-  swipe.start(event.clientY)
-  sheetContent.value?.setPointerCapture(event.pointerId)
-}
-
-const handlePointerMove = (event: PointerEvent) => {
-  if (!isDragging.value) return
-
-  if (Math.abs(event.movementY) > 0) {
-    dismissFocusOnDragStart()
-  }
-
-  swipe.update(event.clientY)
-
-  emitDragDirection(event.movementY)
-
-  if (translateY.value > 0) {
-    if (canSwipeCloseRef.value) {
-      translateY.value = translateY.value + event.movementY
-    } else {
-      translateYAccumulator = translateYAccumulator + event.movementY
-
-      translateY.value = rubberbandIfOutOfBounds(
-        translateYAccumulator,
-        -minSnapPoint.value,
-        0,
-        RUBBERBAND_ELASTICITY,
-      )
-    }
-
-    return
-  }
-
-  heightAccumulator = clamp(heightAccumulator - event.movementY, { min: minSnapPoint.value })
-
-  height.value = rubberbandIfOutOfBounds(
-    heightAccumulator,
-    0,
-    maxSnapPoint.value,
-    RUBBERBAND_ELASTICITY,
-  )
-
-  if (height.value <= minSnapPoint.value) {
-    translateY.value = translateY.value + event.movementY
-  }
-}
-
-let shutDownScroll = false
-let moveSamples = 0
-const movementDetection = (event: PointerEvent) => {
-  if (moveSamples >= 2) {
-    return
-  }
-
-  const isScrollAtTop = sheetScroll.value?.scrollTop === 0
-  const isDraggingDown = event.clientY - contentStartY > 0
-  const hasSingleSnapPoint = flattenedSnapPoints.value.length === 1
-  const isAtTheTop = 0.5 > Math.abs(height.value - maxSnapPoint.value)
-  const hasScroll = (sheetScroll.value?.scrollHeight ?? 0) > (sheetScroll.value?.clientHeight ?? 0)
-
-  if (hasSingleSnapPoint) {
-    if (!props.expandOnContentDrag) {
-      preventContentScroll = false
-      return
-    }
-
-    if (translateY.value === 0 && isScrollAtTop && isDraggingDown) {
-      preventContentScroll = true
-    }
-    if (translateY.value === 0 && isScrollAtTop && !isDraggingDown) {
-      preventContentScroll = false
-    }
-  } else {
-    preventContentScroll = true
-    if (isAtTheTop) {
-      if (isDraggingDown && isScrollAtTop) {
-        preventContentScroll = true
-      }
-      if (!isDraggingDown && isScrollAtTop) {
-        preventContentScroll = false
-      }
-      if (!isScrollAtTop) {
-        preventContentScroll = false
-      }
-    }
-  }
-
-  shutDownScroll = !hasScroll
-
-  moveSamples++
-}
-
-const handleContentPointerMove = (event: PointerEvent) => {
-  if (!isDragging.value) return
-  if (!sheetScroll.value) return
-
-  if (Math.abs(event.movementY) > 0) {
-    dismissFocusOnDragStart()
-  }
-
-  movementDetection(event)
-
-  if (moveSamples <= 1) return
-
-  swipe.update(event.clientY)
-
-  emitDragDirection(event.movementY)
-
-  if (translateY.value > 0) {
-    if (canSwipeCloseRef.value) {
-      translateY.value = clamp(translateY.value + event.movementY, { min: 0 })
-    }
-
-    return
-  }
-
-  height.value = clamp(height.value - event.movementY, {
-    min: minSnapPoint.value,
-    max: maxSnapPoint.value,
-  })
-
-  const hasSingleSnapPoint = flattenedSnapPoints.value.length === 1
-  if (!hasSingleSnapPoint) {
-    if (height.value === maxSnapPoint.value) {
-      preventContentScroll = false
-    }
-  }
-
-  if (height.value <= minSnapPoint.value) {
-    translateY.value = clamp(translateY.value + event.movementY, {
-      min: 0,
-      ...(canSwipeCloseRef.value === false ? { max: 0 } : {}),
-    })
-  }
-}
-
-const resetSheetState = () => {
-  const swipeResult = swipe.end()
-
-  if (
-    swipeResult.isSwipe &&
-    swipeResult.direction === 'down' &&
-    canSwipeCloseRef.value &&
-    height.value <= minSnapPoint.value + SNAP_POINT_TOLERANCE_PX
-  ) {
-    close()
-    return
-  }
-
-  if (canSwipeCloseRef.value) {
-    const threshold = calculateSwipeThreshold(swipeCloseThresholdRef.value, height.value)
-
-    if (translateY.value > threshold) {
-      close()
-      return
-    }
-  }
-
-  if (swipeResult.isSwipe && flattenedSnapPoints.value.length > 1) {
-    const sortedSnapPoints = [...flattenedSnapPoints.value].sort((a, b) => a - b)
-
-    let targetSnapIndex = closestSnapPointIndex.value
-
-    if (swipeResult.direction === 'up') {
-      const nextHigher = sortedSnapPoints.find((point) => point > height.value + 1)
-      if (nextHigher !== undefined) {
-        targetSnapIndex = flattenedSnapPoints.value.indexOf(nextHigher)
-      }
-    } else if (swipeResult.direction === 'down') {
-      const nextLower = [...sortedSnapPoints].reverse().find((point) => point < height.value - 1)
-      if (nextLower !== undefined) {
-        targetSnapIndex = flattenedSnapPoints.value.indexOf(nextLower)
-      }
-    }
-
-    snapToPoint(targetSnapIndex)
-    translateY.value = 0
-    return
-  }
-
-  snapToPoint(closestSnapPointIndex.value)
-  translateY.value = 0
-}
-
-const handleLostPointerCapture = (event: PointerEvent, type: 'header' | 'footer' | 'content') => {
-  isDragging.value = false
-  if (type === 'header') {
-    sheetHeader.value?.releasePointerCapture(event.pointerId)
-  } else if (type === 'footer') {
-    sheetFooter.value?.releasePointerCapture(event.pointerId)
-  } else if (type === 'content') {
-    sheetContent.value?.releasePointerCapture(event.pointerId)
-  }
-
-  moveSamples = 0
-  hasDismissedFocusOnDrag = false
-
-  resetSheetState()
-}
-
-const handleTouchStart = (event: TouchEvent) => {
-  if (isInteractable(event.target as Element)) {
-    return
-  }
-
-  if (shutDownScroll) {
-    event.preventDefault()
-  }
-}
 
 watch(windowHeight, () => {
   debouncedSnapToPoint.call(currentSnapPointIndex.value)
