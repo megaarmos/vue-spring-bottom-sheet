@@ -47,7 +47,10 @@
     "type-check": "turbo type-check",
     "format": "turbo format",
     "start": "node apps/playground/.output/server/index.mjs",
-    "semantic-release": "semantic-release-npm-workspaces-monorepo"
+    "semantic-release": "semantic-release-npm-workspaces-monorepo",
+    "docs:dev": "vitepress dev apps/docs",
+    "docs:build": "vitepress build apps/docs",
+    "docs:preview": "vitepress preview apps/docs"
   },
   "dependencies": {
     "@semantic-release/changelog": "^6.0.3",
@@ -60,6 +63,10 @@
   },
   "devDependencies": {
     "semantic-release-npm-workspaces-monorepo": "^3.2.1",
-    "turbo": "^2.8.1"
+    "turbo": "^2.8.1",
+    "vitepress": "^2.0.0-alpha.16",
+    "vitepress-plugin-npm-commands": "^0.8.1",
+    "vitepress-plugin-tabs": "^0.7.3",
+    "vue": "^3.5.28"
   }
 }

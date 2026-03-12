@@ -1,13 +1,13 @@
 <script setup lang="ts">
 import type { BottomSheetProps } from './types'
 
-import { computed, nextTick, onMounted, onUnmounted, ref, shallowRef, toRefs, watch } from 'vue'
+import { computed, nextTick, onMounted, onUnmounted, ref, shallowRef, toRef, watch } from 'vue'
 import { useElementBounding, useVModel, useWindowSize } from '@vueuse/core'
-import { useSnapPoints } from './composables/useSnapPoints'
-import { useDragGestures } from './composables/useDragGestures'
-import { useSheetScrollLock } from './composables/useSheetScrollLock'
-import { useFocusManagement } from './composables/useFocusManagement'
 import { clamp, funnel } from 'remeda'
+import { useDragGestures } from './composables/useDragGestures'
+import { useFocusManagement } from './composables/useFocusManagement'
+import { useSheetScrollLock } from './composables/useSheetScrollLock'
+import { useSnapPoints } from './composables/useSnapPoints'
 import { resolveSnapPoint } from './utils/resolveSnapPoint'
 
 const props = withDefaults(defineProps<BottomSheetProps>(), {
@@ -21,15 +21,15 @@ const props = withDefaults(defineProps<BottomSheetProps>(), {
 })
 
 const emit = defineEmits<{
-  (e: 'opened'): void
-  (e: 'opening-started'): void
-  (e: 'closed'): void
-  (e: 'closing-started'): void
-  (e: 'dragging-up'): void
-  (e: 'dragging-down'): void
-  (e: 'snapped', snapPointIndex?: number): void
-  (e: 'instinctHeight', instinctHeight: number): void
-  (e: 'update:modelValue'): void
+  opened: []
+  'opening-started': []
+  closed: []
+  'closing-started': []
+  'dragging-up': []
+  'dragging-down': []
+  snapped: [snapPointIndex?: number]
+  instinctHeight: [instinctHeight: number]
+  'update:modelValue': []
 }>()
 
 const showSheet = useVModel(props, 'modelValue', emit, {
@@ -44,6 +44,7 @@ const sheetFooter = shallowRef<HTMLElement | null>(null)
 const sheetScroll = shallowRef<HTMLElement | null>(null)
 const sheetContent = shallowRef<HTMLElement | null>(null)
 const backdrop = shallowRef<HTMLElement | null>(null)
+const keyboardInsetBottom = ref(0)
 
 // ── Dimensions ────────────────────────────────────────────────────────────────
 
@@ -70,11 +71,16 @@ const setInstinctHeights = (header: number, content: number, footer: number) => 
 
 const height = ref(0)
 const translateY = ref(0)
+const renderedSheetHeight = computed(() => {
+  return clamp(height.value + keyboardInsetBottom.value, {
+    max: windowHeight.value,
+  })
+})
 const durationCss = computed(() => props.duration + 'ms')
 
 // ── Snap points ───────────────────────────────────────────────────────────────
 
-const { snapPoints: propSnapPoints } = toRefs(props)
+const propSnapPoints = toRef(() => props.snapPoints)
 const snapPointsRef = computed(() => propSnapPoints.value ?? [instinctHeight.value])
 const {
   flattenedSnapPoints,
@@ -84,11 +90,10 @@ const {
   maxSnapPoint,
 } = useSnapPoints(snapPointsRef, height, windowHeight)
 
-const blockingRef = computed(() => props.blocking)
-const canSwipeCloseRef = computed(() => props.canSwipeClose)
-const swipeCloseThresholdRef = computed(() => props.swipeCloseThreshold)
-const expandOnContentDragRef = computed(() => props.expandOnContentDrag)
-
+const blockingRef = toRef(() => props.blocking)
+const canSwipeCloseRef = toRef(() => props.canSwipeClose)
+const swipeCloseThresholdRef = toRef(() => props.swipeCloseThreshold)
+const expandOnContentDragRef = toRef(() => props.expandOnContentDrag)
 const scrollLock = useSheetScrollLock({ blocking: blockingRef })
 
 const focusManagement = useFocusManagement({
@@ -122,8 +127,8 @@ const { isDragging, headerFooterHandlers, contentWrapperHandlers, scrollEnd } = 
 
 // ── State flags ───────────────────────────────────────────────────────────────
 
-const isOpening = ref(false)
-const isClosing = ref(false)
+const isOpening = shallowRef(false)
+const isClosing = shallowRef(false)
 
 // ── Centralized handlers ──────────────────────────────────────────────────────
 
@@ -160,6 +165,33 @@ const backdropClick = () => {
   if (props.canBackdropClose) close()
 }
 
+const updateKeyboardInset = () => {
+  const viewport = window.visualViewport
+  if (!viewport || !showSheet.value) {
+    keyboardInsetBottom.value = 0
+    return
+  }
+
+  const inset = Math.max(0, window.innerHeight - viewport.height - viewport.offsetTop)
+  keyboardInsetBottom.value = Math.round(inset)
+}
+
+let cleanupKeyboardAvoidance: (() => void) | null = null
+const setupKeyboardAvoidance = () => {
+  const viewport = window.visualViewport
+  if (!viewport) return
+
+  viewport.addEventListener('resize', updateKeyboardInset)
+  viewport.addEventListener('scroll', updateKeyboardInset)
+  window.addEventListener('resize', updateKeyboardInset)
+
+  cleanupKeyboardAvoidance = () => {
+    viewport.removeEventListener('resize', updateKeyboardInset)
+    viewport.removeEventListener('scroll', updateKeyboardInset)
+    window.removeEventListener('resize', updateKeyboardInset)
+  }
+}
+
 const open = async () => {
   if (isOpening.value) return
 
@@ -170,6 +202,7 @@ const open = async () => {
   handleScrollLock(true)
 
   await nextTick()
+  updateKeyboardInset()
 
   const sheetElement = sheet.value as HTMLElement
   sheetHeight.value = sheetElement.getBoundingClientRect().height
@@ -261,6 +294,35 @@ const snapToPoint = (index: number) => {
   emit('snapped', snapPointsRef.value.indexOf(snapValue))
 }
 
+const {
+  isDragging,
+  handleSheetScroll,
+  handlePointerDown,
+  handleContentPointerDown,
+  handlePointerMove,
+  handleContentPointerMove,
+  handleLostPointerCapture,
+  handleTouchStart,
+} = useDragGestures({
+  sheetHeaderRef: sheetHeader,
+  sheetFooterRef: sheetFooter,
+  sheetContentRef: sheetContent,
+  sheetScrollRef: sheetScroll,
+  height,
+  translateY,
+  minSnapPoint,
+  maxSnapPoint,
+  closestSnapPointIndex,
+  flattenedSnapPoints,
+  canSwipeClose: canSwipeCloseRef,
+  expandOnContentDrag: expandOnContentDragRef,
+  swipeCloseThreshold: swipeCloseThresholdRef,
+  onClose: close,
+  onSnapToPoint: snapToPoint,
+  onDraggingUp: () => emit('dragging-up'),
+  onDraggingDown: () => emit('dragging-down'),
+})
+
 const debouncedSnapToPoint = funnel((index) => snapToPoint(index), {
   minQuietPeriodMs: props.duration,
   reducer: (_prev: number | undefined, index: number) => index,
@@ -270,6 +332,15 @@ const debouncedSnapToPoint = funnel((index) => snapToPoint(index), {
 
 watch(showSheet, (value) => {
   value ? open() : close()
+})
+watch(showSheet, async (value) => {
+  if (!value) {
+    keyboardInsetBottom.value = 0
+    return
+  }
+
+  await nextTick()
+  updateKeyboardInset()
 })
 
 // Re-synchronize focus trap and scroll lock whenever `blocking` toggles while
@@ -308,10 +379,12 @@ watch(instinctHeight, (value) => {
 // ── Lifecycle ─────────────────────────────────────────────────────────────────
 
 onMounted(() => {
+  setupKeyboardAvoidance()
   if (showSheet.value) open()
 })
 
 onUnmounted(() => {
+  cleanupKeyboardAvoidance?.()
   focusManagement.cleanup()
 })
 
@@ -320,7 +393,7 @@ onUnmounted(() => {
 const onLeave = (el: Element) => {
   const element = el as HTMLElement
   element.style.transition = `transform ${props.duration}ms ease, height ${props.duration}ms ease`
-  element.style.transform = `translateY(${height.value}px)`
+  element.style.transform = `translateY(${renderedSheetHeight.value}px)`
 }
 
 defineExpose({ open, close, snapToPoint })
@@ -328,14 +401,16 @@ defineExpose({ open, close, snapToPoint })
 
 <template>
   <Teleport :to="teleportTo" :defer="teleportDefer">
-    <Transition name="vsbs-backdrop">
-      <div
-        v-if="showSheet && blocking"
-        ref="backdrop"
-        data-vsbs-backdrop
-        @click="backdropClick()"
-      />
-    </Transition>
+    <div>
+      <Transition name="vsbs-backdrop">
+        <div
+          v-if="showSheet && blocking"
+          ref="backdrop"
+          data-vsbs-backdrop
+          @click="backdropClick()"
+        />
+      </Transition>
+    </div>
   </Teleport>
 
   <Teleport :to="teleportTo" :defer="teleportDefer">
@@ -345,7 +420,8 @@ defineExpose({ open, close, snapToPoint })
         ref="sheet"
         :style="{
           transform: `translateY(${translateY}px)`,
-          height: `${height}px`,
+          height: `${renderedSheetHeight}px`,
+          paddingBottom: `${keyboardInsetBottom}px`,
           transition: isDragging
             ? 'none'
             : `transform ${duration}ms ease, height ${duration}ms ease`,
@@ -361,29 +437,33 @@ defineExpose({ open, close, snapToPoint })
         <div
           ref="sheetHeader"
           data-vsbs-header
-          v-bind="headerFooterHandlers"
           :class="headerClass"
-          style="touch-action: none"
+          @pointerdown="handlePointerDown($event, 'header')"
+          @pointermove="handlePointerMove"
+          @lostpointercapture="handleLostPointerCapture($event, 'header')"
         >
           <slot name="header" />
         </div>
-        <div ref="sheetScroll" data-vsbs-scroll @scrollend="scrollEnd">
-          <div
-            data-vsbs-content-wrapper
-            v-bind="contentWrapperHandlers"
-            :style="{ touchAction: 'pan-y' }"
-          >
-            <div ref="sheetContent" data-vsbs-content :class="contentClass">
-              <slot />
-            </div>
+        <div
+          ref="sheetScroll"
+          data-vsbs-scroll
+          @touchstart="handleTouchStart"
+          @touchmove="handleSheetScroll"
+          @pointerdown="handleContentPointerDown"
+          @pointermove="handleContentPointerMove"
+          @lostpointercapture="handleLostPointerCapture($event, 'content')"
+        >
+          <div ref="sheetContent" data-vsbs-content :class="contentClass">
+            <slot />
           </div>
         </div>
         <div
           ref="sheetFooter"
           data-vsbs-footer
-          v-bind="headerFooterHandlers"
           :class="footerClass"
-          style="touch-action: none"
+          @pointerdown="handlePointerDown($event, 'footer')"
+          @pointermove="handlePointerMove"
+          @lostpointercapture="handleLostPointerCapture($event, 'footer')"
         >
           <slot name="footer" />
         </div>
@@ -417,6 +497,7 @@ defineExpose({ open, close, snapToPoint })
 
 [data-vsbs-sheet] {
   background-color: var(--vsbs-background, #fff);
+  box-sizing: border-box;
   border-top-left-radius: var(--vsbs-border-radius, 16px);
   border-top-right-radius: var(--vsbs-border-radius, 16px);
 
@@ -442,6 +523,8 @@ defineExpose({ open, close, snapToPoint })
 }
 
 [data-vsbs-header] {
+  touch-action: none;
+
   box-shadow: 0 1px 0 var(--vsbs-border-color, rgba(46, 59, 66, 0.125));
   flex-shrink: 0;
   padding: 20px var(--vsbs-padding-x, 16px) 8px;
@@ -473,6 +556,7 @@ defineExpose({ open, close, snapToPoint })
 }
 
 [data-vsbs-footer] {
+  touch-action: none;
   box-shadow: 0 -1px 0 var(--vsbs-border-color, rgba(46, 59, 66, 0.125));
   flex-grow: 0;
   flex-shrink: 0;
@@ -488,10 +572,6 @@ defineExpose({ open, close, snapToPoint })
   flex-grow: 1;
   overflow-y: auto;
   overscroll-behavior: none;
-}
-
-[data-vsbs-content-wrapper] {
-  height: 100%;
 }
 
 [data-vsbs-content] {

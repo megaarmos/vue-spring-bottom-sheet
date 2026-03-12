@@ -13,16 +13,13 @@ export interface UseSheetScrollLockOptions {
 export function useSheetScrollLock(options: UseSheetScrollLockOptions) {
   const { blocking } = options
 
-  const isWindowScrollLocked = useScrollLock(document.body)
   const isWindowRootScrollLocked = useScrollLock(document.documentElement)
 
   const lock = () => {
-    isWindowScrollLocked.value = true
     isWindowRootScrollLocked.value = true
   }
 
   const unlock = () => {
-    isWindowScrollLocked.value = false
     isWindowRootScrollLocked.value = false
   }
 

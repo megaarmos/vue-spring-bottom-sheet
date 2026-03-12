@@ -1,3 +1,18 @@
+# [3.1.0](https://github.com/megaarmos/vue-spring-bottom-sheet/compare/v3.0.0...v3.1.0) (2026-03-08)
+
+
+### Bug Fixes
+
+* broken backdrop transition ([ed4fda5](https://github.com/megaarmos/vue-spring-bottom-sheet/commit/ed4fda5fa15edf26d536eb489056ea133fb5ac15))
+* broken dragging when reaches last snap point ([db6461f](https://github.com/megaarmos/vue-spring-bottom-sheet/commit/db6461f77caf7140f0d8beada44aee7ad92f97b8))
+* enhance drag gesture handling in BottomSheet component ([8086f6d](https://github.com/megaarmos/vue-spring-bottom-sheet/commit/8086f6dff1ef00dca1d007d82f61b93dbc460af9))
+* extract drag logic into composable ([055bd63](https://github.com/megaarmos/vue-spring-bottom-sheet/commit/055bd6361ce311c32b028f9ca7bb8fdcfb30f16a))
+
+
+### Features
+
+* drag inconsistencies and add keyboard avoidance ([3056eab](https://github.com/megaarmos/vue-spring-bottom-sheet/commit/3056eab17a480a555e3653e1f26a69ccca6785ac))
+
 # [3.0.0](https://github.com/megaarmos/vue-spring-bottom-sheet/compare/v2.5.0...v3.0.0) (2026-02-06)
 
 

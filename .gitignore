@@ -27,3 +27,7 @@ dist-ssr
 .turbo
 
 /packages/*/README.md
+
+# Vitepress
+apps/docs/.vitepress/dist
+apps/docs/.vitepress/cache

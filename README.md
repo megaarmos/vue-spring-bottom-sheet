@@ -25,9 +25,9 @@ bun install @douxcode/vue-spring-bottom-sheet
 <script setup>
 import BottomSheet from '@douxcode/vue-spring-bottom-sheet'
 import '@douxcode/vue-spring-bottom-sheet/dist/style.css'
-import { ref } from 'vue'
+import { useTemplateRef } from 'vue'
 
-const bottomSheet = ref(null)
+const bottomSheet = useTemplateRef('bottomSheet')
 
 const open = () => {
   bottomSheet.value.open()
@@ -130,21 +130,21 @@ For Nuxt 3, just wrap component in `<ClientOnly>`
 
 ### Prop Definitions
 
-| Prop                | Type                      | Default          | Description                                                               |
-| ------------------- | ------------------------- | ---------------- | ------------------------------------------------------------------------- |
-| duration            | Number                    | 250              | Animation duration in milliseconds                                        |
-| snapPoints          | Array<number\|string>     | [instinctHeight] | Custom snapping positions                                                 |
-| initialSnapPoint    | Number                    | minHeight        | Initial snap point index                                                  |
-| blocking            | Boolean                   | true             | Block interactions with underlying content                                |
-| canSwipeClose       | Boolean                   | true             | Enable swipe-to-close gesture                                             |
-| swipeCloseThreshold | Number\|String            | "50%"            | The amount of translation (in px or %) after which the element will close |
-| canBackdropClose    | Boolean                   | true             | Allow closing by tapping backdrop                                         |
-| expandOnContentDrag | Boolean                   | true             | Enable expanding by dragging content                                      |
-| teleportTo          | String \| RendererElement | body             | Teleport to a specific element                                            |
-| teleportDefer       | Boolean                   | false            | Defer teleporting until opened (Vue 3.5+ only)                            |
-| headerClass         | String                    | ''               | Set header element class                                                  |
-| contentClass        | String                    | ''               | Set content element class                                                 |
-| footerClass         | String                    | ''               | Set footer element class                                                  |
+| Prop                | Type                        | Default          | Description                                                               |
+| ------------------- | --------------------------- | ---------------- | ------------------------------------------------------------------------- |
+| duration            | Number                      | 250              | Animation duration in milliseconds                                        |
+| snapPoints          | Array<number\|`${number}%`> | [instinctHeight] | Custom snapping positions                                                 |
+| initialSnapPoint    | Number                      | minHeight        | Initial snap point index                                                  |
+| blocking            | Boolean                     | true             | Block interactions with underlying content                                |
+| canSwipeClose       | Boolean                     | true             | Enable swipe-to-close gesture                                             |
+| swipeCloseThreshold | Number\|`${number}%`        | "50%"            | The amount of translation (in px or %) after which the element will close |
+| canBackdropClose    | Boolean                     | true             | Allow closing by tapping backdrop                                         |
+| expandOnContentDrag | Boolean                     | true             | Enable expanding by dragging content                                      |
+| teleportTo          | String \| RendererElement   | body             | Teleport to a specific element                                            |
+| teleportDefer       | Boolean                     | false            | Defer teleporting until opened (Vue 3.5+ only)                            |
+| headerClass         | String                      | ''               | Set header element class                                                  |
+| contentClass        | String                      | ''               | Set content element class                                                 |
+| footerClass         | String                      | ''               | Set footer element class                                                  |
 
 ## Exposed methods
 
