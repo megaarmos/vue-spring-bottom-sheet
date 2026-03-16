@@ -79,6 +79,8 @@ export const useDragGestures = (options: UseDragGesturesOptions) => {
   }
 
   const handlePointerDown = (event: PointerEvent, type: DragHandle) => {
+    if (isInteractable(event.target as Element)) return
+
     const target = type === 'header' ? options.sheetHeaderRef.value : options.sheetFooterRef.value
 
     if (!target) return

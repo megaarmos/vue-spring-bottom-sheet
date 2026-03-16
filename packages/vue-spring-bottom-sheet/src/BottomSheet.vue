@@ -18,6 +18,7 @@ const props = withDefaults(defineProps<BottomSheetProps>(), {
   duration: 250,
   teleportTo: 'body',
   teleportDefer: false,
+  forceMount: false,
 })
 
 const emit = defineEmits<{
@@ -324,7 +325,8 @@ defineExpose({ open, close, snapToPoint })
     <div>
       <Transition name="vsbs-backdrop">
         <div
-          v-if="showSheet && blocking"
+          v-if="forceMount || (showSheet && blocking)"
+          v-show="showSheet && blocking"
           ref="backdrop"
           data-vsbs-backdrop
           @click="backdropClick()"
@@ -336,7 +338,8 @@ defineExpose({ open, close, snapToPoint })
   <Teleport :to="teleportTo" :defer="teleportDefer">
     <Transition name="vsbs-sheet" @leave="onLeave">
       <div
-        v-if="showSheet"
+        v-if="forceMount || showSheet"
+        v-show="showSheet"
         ref="sheet"
         :style="{
           transform: `translateY(${translateY}px)`,

@@ -5,6 +5,7 @@ export interface BottomSheetProps {
   snapPoints?: Array<number | `${number}%`>
   initialSnapPoint?: number
   blocking?: boolean
+  forceMount?: boolean
   canSwipeClose?: boolean
   swipeCloseThreshold?: string | number
   canBackdropClose?: boolean
