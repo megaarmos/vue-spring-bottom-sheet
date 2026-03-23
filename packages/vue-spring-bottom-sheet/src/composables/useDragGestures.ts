@@ -69,6 +69,11 @@ export const useDragGestures = (options: UseDragGesturesOptions) => {
   }
 
   const handleSheetScroll = (event: TouchEvent) => {
+    const target = event.target as Element | null
+    if (target && isInteractable(target)) {
+      event.preventDefault()
+    }
+
     if (typeof event.cancelable !== 'boolean' || event.cancelable) {
       if (preventContentScroll) {
         event.preventDefault()
@@ -79,8 +84,6 @@ export const useDragGestures = (options: UseDragGesturesOptions) => {
   }
 
   const handlePointerDown = (event: PointerEvent, type: DragHandle) => {
-    if (isInteractable(event.target as Element)) return
-
     const target = type === 'header' ? options.sheetHeaderRef.value : options.sheetFooterRef.value
 
     if (!target) return
@@ -99,10 +102,12 @@ export const useDragGestures = (options: UseDragGesturesOptions) => {
   }
 
   const handleContentPointerDown = (event: PointerEvent) => {
+    const target = event.target as Element | null
+
     if (!options.sheetContentRef.value) return
     if (event.button !== 0) return
     if (options.expandOnContentDrag.value === false) return
-    if (isInteractable(event.target as Element)) return
+    if (target && isInteractable(target)) return
 
     heightAccumulator = options.height.value
     translateYAccumulator = options.translateY.value
@@ -323,10 +328,6 @@ export const useDragGestures = (options: UseDragGesturesOptions) => {
   }
 
   const handleTouchStart = (event: TouchEvent) => {
-    if (isInteractable(event.target as Element)) {
-      return
-    }
-
     if (shutDownScroll) {
       event.preventDefault()
     }

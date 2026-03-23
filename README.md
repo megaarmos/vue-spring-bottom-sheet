@@ -145,6 +145,9 @@ For Nuxt 3, just wrap component in `<ClientOnly>`
 | headerClass         | String                      | ''               | Set header element class                                                  |
 | contentClass        | String                      | ''               | Set content element class                                                 |
 | footerClass         | String                      | ''               | Set footer element class                                                  |
+| forceMount          | Boolean                     | false            | Force mount the bottom sheet in the DOM                                   |
+
+Interactive content inside the sheet body keeps its native touch behavior. Inputs and editable content do not start sheet dragging, and custom widgets can opt out with data-vsbs-no-drag.
 
 ## Exposed methods
 
