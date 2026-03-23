@@ -1,3 +1,11 @@
+# [3.2.0](https://github.com/megaarmos/vue-spring-bottom-sheet/compare/v3.1.0...v3.2.0) (2026-03-23)
+
+
+### Features
+
+* add forceMount prop ([712e7f9](https://github.com/megaarmos/vue-spring-bottom-sheet/commit/712e7f9245f5ecad92a7a86a962c664a9aeac988))
+* enhance drag gesture handling ([9fd74bd](https://github.com/megaarmos/vue-spring-bottom-sheet/commit/9fd74bdfd4c29a4cd9f5d23af42e17e0fbbba6d5))
+
 # [3.1.0](https://github.com/megaarmos/vue-spring-bottom-sheet/compare/v3.0.0...v3.1.0) (2026-03-08)
 
 
