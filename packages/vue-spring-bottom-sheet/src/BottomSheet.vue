@@ -37,24 +37,7 @@ const showSheet = useVModel(props, 'modelValue', emit, {
   passive: true,
 })
 
-watch(showSheet, (value) => {
-  value ? open() : close()
-})
-
-watch(showSheet, async (value) => {
-  if (!value) {
-    keyboardInsetBottom.value = 0
-    return
-  }
-
-  await nextTick()
-  updateKeyboardInset()
-})
-
-onMounted(() => {
-  setupKeyboardAvoidance()
-  if (showSheet.value) open()
-})
+// ── Template refs ─────────────────────────────────────────────────────────────
 
 const sheet = shallowRef<HTMLElement | null>(null)
 const sheetHeader = shallowRef<HTMLElement | null>(null)
@@ -63,6 +46,8 @@ const sheetScroll = shallowRef<HTMLElement | null>(null)
 const sheetContent = shallowRef<HTMLElement | null>(null)
 const backdrop = shallowRef<HTMLElement | null>(null)
 const keyboardInsetBottom = ref(0)
+
+// ── Dimensions ────────────────────────────────────────────────────────────────
 
 const { height: windowHeight } = useWindowSize()
 const { height: sheetHeight } = useElementBounding(sheet)
@@ -83,6 +68,8 @@ const setInstinctHeights = (header: number, content: number, footer: number) => 
   sheetFooterHeight.value = footer
 }
 
+// ── Sheet geometry ────────────────────────────────────────────────────────────
+
 const height = ref(0)
 const translateY = ref(0)
 const renderedSheetHeight = computed(() => {
@@ -91,6 +78,8 @@ const renderedSheetHeight = computed(() => {
   })
 })
 const durationCss = computed(() => props.duration + 'ms')
+
+// ── Snap points ───────────────────────────────────────────────────────────────
 
 const propSnapPoints = toRef(() => props.snapPoints)
 const snapPointsRef = computed(() => propSnapPoints.value ?? [instinctHeight.value])
@@ -115,8 +104,63 @@ const focusManagement = useFocusManagement({
   onEscape: () => close(),
 })
 
+const { isDragging, headerFooterHandlers, contentWrapperHandlers, scrollEnd } = useDragGestures({
+  sheetRef: sheet,
+  sheetScrollRef: sheetScroll,
+  height,
+  translateY,
+  sheetHeight,
+  windowHeight,
+  snapPointsRef,
+  flattenedSnapPoints,
+  currentSnapPointIndex,
+  closestSnapPointIndex,
+  minSnapPoint,
+  maxSnapPoint,
+  canSwipeClose: canSwipeCloseRef,
+  swipeCloseThreshold: swipeCloseThresholdRef,
+  expandOnContentDrag: expandOnContentDragRef,
+  onClose: () => close(),
+  onSnapped: (index) => emit('snapped', index),
+  onDraggingUp: () => emit('dragging-up'),
+  onDraggingDown: () => emit('dragging-down'),
+})
+
+// ── State flags ───────────────────────────────────────────────────────────────
+
 const isOpening = shallowRef(false)
 const isClosing = shallowRef(false)
+
+// ── Centralized handlers ──────────────────────────────────────────────────────
+
+/**
+ * Activate or deactivate the focus trap based on intent and current state.
+ * - Activates focus trap + escape-key listener when shouldActivate=true, the sheet
+ *   is visible, and blocking=true (useFocusManagement enforces the blocking check).
+ * - Deactivates and tears down listeners when shouldActivate=false.
+ */
+const handleFocusTrap = (shouldActivate: boolean): void => {
+  if (shouldActivate && showSheet.value) {
+    focusManagement.activate()
+  } else {
+    focusManagement.deactivate()
+  }
+}
+
+/**
+ * Lock or unlock body scroll based on intent and current state.
+ * - Locks when shouldLock=true, the sheet is visible, AND blocking=true.
+ * - Unlocks unconditionally otherwise (unlock is idempotent when already unlocked).
+ */
+const handleScrollLock = (shouldLock: boolean): void => {
+  if (shouldLock && showSheet.value && props.blocking) {
+    scrollLock.lock()
+  } else {
+    scrollLock.unlock()
+  }
+}
+
+// ── Open / Close ──────────────────────────────────────────────────────────────
 
 const backdropClick = () => {
   if (props.canBackdropClose) close()
@@ -156,7 +200,7 @@ const open = async () => {
   isOpening.value = true
   emit('opening-started')
 
-  scrollLock.lockIfBlocking()
+  handleScrollLock(true)
 
   await nextTick()
   updateKeyboardInset()
@@ -205,7 +249,7 @@ const open = async () => {
       setTimeout(() => {
         if (showSheet.value) {
           emit('opened')
-          focusManagement.activate()
+          handleFocusTrap(true)
         }
       }, props.duration)
     }
@@ -221,8 +265,8 @@ const close = () => {
   isClosing.value = true
   emit('closing-started')
 
-  scrollLock.unlockIfBlocking()
-  focusManagement.deactivate()
+  handleScrollLock(false)
+  handleFocusTrap(false)
 
   translateY.value = height.value
 
@@ -231,6 +275,8 @@ const close = () => {
     isClosing.value = false
   }, props.duration)
 }
+
+// ── Snap-point helpers ────────────────────────────────────────────────────────
 
 const snapToPoint = (index: number) => {
   if (!snapPointsRef.value) return
@@ -283,6 +329,31 @@ const debouncedSnapToPoint = funnel((index) => snapToPoint(index), {
   reducer: (_prev: number | undefined, index: number) => index,
 })
 
+// ── Watchers ──────────────────────────────────────────────────────────────────
+
+watch(showSheet, (value) => {
+  value ? open() : close()
+})
+watch(showSheet, async (value) => {
+  if (!value) {
+    keyboardInsetBottom.value = 0
+    return
+  }
+
+  await nextTick()
+  updateKeyboardInset()
+})
+
+// Re-synchronize focus trap and scroll lock whenever `blocking` toggles while
+// the sheet is already open. nextTick ensures blockingRef has settled before
+// the handlers read props.blocking / useFocusManagement's blocking ref.
+watch(blockingRef, async (newBlocking) => {
+  if (!showSheet.value) return
+  await nextTick()
+  handleScrollLock(newBlocking)
+  handleFocusTrap(newBlocking)
+})
+
 watch(snapPointsRef, (value, oldValue) => {
   if (showSheet.value === false) return
 
@@ -306,10 +377,19 @@ watch(instinctHeight, (value) => {
   emit('instinctHeight', value)
 })
 
+// ── Lifecycle ─────────────────────────────────────────────────────────────────
+
+onMounted(() => {
+  setupKeyboardAvoidance()
+  if (showSheet.value) open()
+})
+
 onUnmounted(() => {
   cleanupKeyboardAvoidance?.()
   focusManagement.cleanup()
 })
+
+// ── Transition hooks ──────────────────────────────────────────────────────────
 
 const onLeave = (el: Element) => {
   const element = el as HTMLElement
