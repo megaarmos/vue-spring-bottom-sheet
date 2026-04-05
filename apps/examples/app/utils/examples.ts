@@ -45,9 +45,4 @@ export const examples: Example[] = [
     title: 'Morphing Sheet (iOS 26)',
     description: 'Floating card → edge-to-edge → fullscreen with spring morphing.',
   },
-  {
-    slug: 'events',
-    title: 'Event Handling Example',
-    description: 'Demonstrating all lifecycle events.',
-  },
 ]
