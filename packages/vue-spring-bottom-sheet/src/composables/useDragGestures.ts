@@ -33,6 +33,7 @@ interface UseDragGesturesOptions {
 
   onClose: () => void
   onSnapToPoint: (index: number) => void
+  onResetTranslateY?: () => void
   onDraggingUp?: () => void
   onDraggingDown?: () => void
 }
@@ -301,12 +302,20 @@ export const useDragGestures = (options: UseDragGesturesOptions) => {
       }
 
       options.onSnapToPoint(targetSnapIndex)
-      options.translateY.value = 0
+      resetTranslateY()
       return
     }
 
     options.onSnapToPoint(options.closestSnapPointIndex.value)
-    options.translateY.value = 0
+    resetTranslateY()
+  }
+
+  const resetTranslateY = () => {
+    if (options.onResetTranslateY) {
+      options.onResetTranslateY()
+    } else {
+      options.translateY.value = 0
+    }
   }
 
   const handleLostPointerCapture = (event: PointerEvent, type: PointerCaptureTarget) => {

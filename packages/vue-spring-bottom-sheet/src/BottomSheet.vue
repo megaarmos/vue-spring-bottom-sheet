@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { BottomSheetProps } from './types'
+import type { BottomSheetProps, MorphingConfig } from './types'
 
 import { computed, nextTick, onMounted, onUnmounted, ref, shallowRef, toRef, watch } from 'vue'
 import { useElementBounding, useVModel, useWindowSize } from '@vueuse/core'
@@ -8,6 +8,8 @@ import { useDragGestures } from './composables/useDragGestures'
 import { useFocusManagement } from './composables/useFocusManagement'
 import { useSheetScrollLock } from './composables/useSheetScrollLock'
 import { useSnapPoints } from './composables/useSnapPoints'
+import { useSpring } from './composables/useSpring'
+import { useMorphing } from './composables/useMorphing'
 import { resolveSnapPoint } from './utils/resolveSnapPoint'
 
 const props = withDefaults(defineProps<BottomSheetProps>(), {
@@ -83,8 +85,22 @@ const setInstinctHeights = (header: number, content: number, footer: number) => 
   sheetFooterHeight.value = footer
 }
 
+// --- Spring animation setup ---
+const springCfg = computed(() => ({
+  mass: props.springConfig?.mass ?? 1,
+  stiffness: props.springConfig?.stiffness ?? 300,
+  damping: props.springConfig?.damping ?? 30,
+}))
+
+const useSpringAnimation = computed(() => !!props.springConfig || !!props.morphing)
+
 const height = ref(0)
 const translateY = ref(0)
+
+// Springs drive height and translateY refs directly
+const heightSpring = useSpring(height, springCfg.value)
+const translateYSpring = useSpring(translateY, springCfg.value)
+
 const renderedSheetHeight = computed(() => {
   return clamp(height.value + keyboardInsetBottom.value, {
     max: windowHeight.value,
@@ -101,6 +117,24 @@ const {
   minSnapPoint,
   maxSnapPoint,
 } = useSnapPoints(snapPointsRef, height, windowHeight)
+
+// --- Morphing setup ---
+const morphingEnabled = computed(() => !!props.morphing)
+
+const morphingConfig = computed<Partial<MorphingConfig>>(() => {
+  if (typeof props.morphing === 'object') return props.morphing
+  return {}
+})
+
+const sortedSnapHeights = computed(() => {
+  return [...flattenedSnapPoints.value].sort((a, b) => a - b)
+})
+
+const { morphStyle, cornerRadius } = useMorphing(
+  height,
+  sortedSnapHeights,
+  morphingConfig.value,
+)
 
 const blockingRef = toRef(() => props.blocking)
 const canSwipeCloseRef = toRef(() => props.canSwipeClose)
@@ -180,6 +214,7 @@ const open = async () => {
     (point) => point === minSnapPoint.value,
   )
 
+  let openHeight: number
   if (props.initialSnapPoint !== undefined) {
     const index = props.initialSnapPoint
 
@@ -191,25 +226,43 @@ const open = async () => {
     const snapValue = snapPointsRef.value[index]
     if (!snapValue) return
 
-    height.value = resolveSnapPoint(snapValue, windowHeight.value)
+    openHeight = resolveSnapPoint(snapValue, windowHeight.value)
   } else {
-    height.value = clamp(minSnapPoint.value, { max: windowHeight.value })
+    openHeight = clamp(minSnapPoint.value, { max: windowHeight.value })
   }
 
-  translateY.value = height.value
+  if (useSpringAnimation.value) {
+    // Set height immediately, then spring translateY from offscreen to 0
+    height.value = openHeight
+    heightSpring.sync()
+    translateY.value = openHeight
+    translateYSpring.sync()
 
-  requestAnimationFrame(() => {
-    translateY.value = 0
-
-    if (props.blocking) {
-      setTimeout(() => {
-        if (showSheet.value) {
+    requestAnimationFrame(() => {
+      translateYSpring.springTo(0, () => {
+        if (props.blocking && showSheet.value) {
           emit('opened')
           focusManagement.activate()
         }
-      }, props.duration)
-    }
-  })
+      })
+    })
+  } else {
+    height.value = openHeight
+    translateY.value = openHeight
+
+    requestAnimationFrame(() => {
+      translateY.value = 0
+
+      if (props.blocking) {
+        setTimeout(() => {
+          if (showSheet.value) {
+            emit('opened')
+            focusManagement.activate()
+          }
+        }, props.duration)
+      }
+    })
+  }
 
   isOpening.value = false
 }
@@ -224,12 +277,20 @@ const close = () => {
   scrollLock.unlockIfBlocking()
   focusManagement.deactivate()
 
-  translateY.value = height.value
+  if (useSpringAnimation.value) {
+    translateYSpring.sync()
+    translateYSpring.springTo(height.value, () => {
+      emit('closed')
+      isClosing.value = false
+    })
+  } else {
+    translateY.value = height.value
 
-  setTimeout(() => {
-    emit('closed')
-    isClosing.value = false
-  }, props.duration)
+    setTimeout(() => {
+      emit('closed')
+      isClosing.value = false
+    }, props.duration)
+  }
 }
 
 const snapToPoint = (index: number) => {
@@ -245,7 +306,15 @@ const snapToPoint = (index: number) => {
   const snapValue = snapPointsRef.value[index]
   if (!snapValue) return
 
-  height.value = resolveSnapPoint(snapValue, windowHeight.value)
+  const targetH = resolveSnapPoint(snapValue, windowHeight.value)
+
+  if (useSpringAnimation.value) {
+    heightSpring.sync()
+    heightSpring.springTo(targetH)
+  } else {
+    height.value = targetH
+  }
+
   emit('snapped', snapPointsRef.value.indexOf(snapValue))
 }
 
@@ -274,8 +343,24 @@ const {
   swipeCloseThreshold: swipeCloseThresholdRef,
   onClose: close,
   onSnapToPoint: snapToPoint,
+  onResetTranslateY: () => {
+    if (useSpringAnimation.value) {
+      translateYSpring.sync()
+      translateYSpring.springTo(0)
+    } else {
+      translateY.value = 0
+    }
+  },
   onDraggingUp: () => emit('dragging-up'),
   onDraggingDown: () => emit('dragging-down'),
+})
+
+// When drag starts, cancel any running spring animations
+watch(isDragging, (dragging) => {
+  if (dragging && useSpringAnimation.value) {
+    heightSpring.cancel()
+    translateYSpring.cancel()
+  }
 })
 
 const debouncedSnapToPoint = funnel((index) => snapToPoint(index), {
@@ -295,7 +380,12 @@ watch(snapPointsRef, (value, oldValue) => {
   if (!currentSnapPoint || typeof currentSnapPoint === 'string') return
   if (!previousSnapPoint || typeof previousSnapPoint === 'string') return
 
-  height.value = clamp(currentSnapPoint, { max: windowHeight.value })
+  if (useSpringAnimation.value) {
+    heightSpring.sync()
+    heightSpring.springTo(clamp(currentSnapPoint, { max: windowHeight.value }))
+  } else {
+    height.value = clamp(currentSnapPoint, { max: windowHeight.value })
+  }
 })
 
 watch(windowHeight, () => {
@@ -309,13 +399,71 @@ watch(instinctHeight, (value) => {
 onUnmounted(() => {
   cleanupKeyboardAvoidance?.()
   focusManagement.cleanup()
+  heightSpring.cancel()
+  translateYSpring.cancel()
+})
+
+// CSS transition (only used when spring animation is disabled)
+const cssTransition = computed(() => {
+  if (useSpringAnimation.value) return 'none'
+  if (isDragging.value) return 'none'
+  return `transform ${props.duration}ms ease, height ${props.duration}ms ease`
 })
 
 const onLeave = (el: Element) => {
   const element = el as HTMLElement
-  element.style.transition = `transform ${props.duration}ms ease, height ${props.duration}ms ease`
-  element.style.transform = `translateY(${renderedSheetHeight.value}px)`
+  if (useSpringAnimation.value) {
+    // Spring animation handles the leave
+    element.style.transition = 'none'
+    element.style.transform = `translateY(${renderedSheetHeight.value}px)`
+  } else {
+    element.style.transition = `transform ${props.duration}ms ease, height ${props.duration}ms ease`
+    element.style.transform = `translateY(${renderedSheetHeight.value}px)`
+  }
 }
+
+// Morphing-aware container style
+const sheetStyle = computed(() => {
+  const base: Record<string, string> = {
+    transform: `translateY(${translateY.value}px)`,
+    height: `${renderedSheetHeight.value}px`,
+    paddingBottom: `${keyboardInsetBottom.value}px`,
+    transition: cssTransition.value,
+  }
+
+  if (morphingEnabled.value) {
+    const ms = morphStyle.value
+    base.left = ms.left as string
+    base.right = ms.right as string
+    base.bottom = ms.bottom as string
+    base.borderRadius = ms.borderRadius as string
+    // Override the default margin-left/right auto for morphing
+    base.marginLeft = '0'
+    base.marginRight = '0'
+    base.width = 'auto'
+  }
+
+  return base
+})
+
+// Morphing-aware header style (corner radius on header too)
+const headerMorphStyle = computed(() => {
+  if (!morphingEnabled.value) return {}
+  const r = cornerRadius.value
+  return {
+    borderTopLeftRadius: `${r}px`,
+    borderTopRightRadius: `${r}px`,
+  }
+})
+
+// Morphing-aware shadow pseudo style
+const shadowMorphStyle = computed(() => {
+  if (!morphingEnabled.value) return {}
+  const r = cornerRadius.value
+  return {
+    '--vsbs-border-radius': `${r}px`,
+  }
+})
 
 defineExpose({ open, close, snapToPoint })
 </script>
@@ -341,16 +489,10 @@ defineExpose({ open, close, snapToPoint })
         v-if="forceMount || showSheet"
         v-show="showSheet"
         ref="sheet"
-        :style="{
-          transform: `translateY(${translateY}px)`,
-          height: `${renderedSheetHeight}px`,
-          paddingBottom: `${keyboardInsetBottom}px`,
-          transition: isDragging
-            ? 'none'
-            : `transform ${duration}ms ease, height ${duration}ms ease`,
-        }"
+        :style="sheetStyle"
         :data-vsbs-shadow="!blocking"
         :data-vsbs-sheet-show="showSheet"
+        :data-vsbs-morphing="morphingEnabled || undefined"
         aria-modal="true"
         data-vsbs-sheet
         tabindex="-1"
@@ -361,6 +503,7 @@ defineExpose({ open, close, snapToPoint })
           ref="sheetHeader"
           data-vsbs-header
           :class="headerClass"
+          :style="headerMorphStyle"
           @pointerdown="handlePointerDown($event, 'header')"
           @pointermove="handlePointerMove"
           @lostpointercapture="handleLostPointerCapture($event, 'header')"
@@ -439,6 +582,15 @@ defineExpose({ open, close, snapToPoint })
   right: 0;
   width: 100%;
   will-change: height, transform;
+}
+
+/* Morphing mode overrides */
+[data-vsbs-morphing] {
+  max-width: none;
+  overflow: hidden;
+  will-change: height, transform, border-radius, left, right, bottom;
+  box-shadow: 0 -2px 20px 0 var(--vsbs-shadow-color, rgba(0, 0, 0, 0.12)),
+    0 0 40px 0 var(--vsbs-shadow-color, rgba(0, 0, 0, 0.06));
 }
 
 [data-vsbs-sheet-show='true'] {
