@@ -6,10 +6,18 @@ export default defineNuxtConfig({
     enabled: true,
   },
 
+  app: {
+    baseURL: process.env.NUXT_APP_BASE_URL || '/',
+  },
+
   css: ['@douxcode/vue-spring-bottom-sheet/dist/style.css', '~/assets/css/main.css'],
 
   routeRules: {
     '/': { prerender: true },
+  },
+
+  nitro: {
+    preset: 'static',
   },
 
   compatibilityDate: '2025-01-15',
