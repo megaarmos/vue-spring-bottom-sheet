@@ -33,7 +33,7 @@ jobs:
         run: bun install
 
       - name: Build library
-        run: bun run --filter '@douxcode/vue-spring-bottom-sheet' build
+        run: bun run --filter '@opekunov/vue-spring-bottom-sheet' build
 
       - name: Generate static site
         working-directory: apps/examples

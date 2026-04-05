@@ -3,7 +3,7 @@
 ## Package Managers
 
 ```sh
-npm install @douxcode/vue-spring-bottom-sheet // [!=npm auto]
+npm install @opekunov/vue-spring-bottom-sheet // [!=npm auto]
 ```
 
 ## Next Steps

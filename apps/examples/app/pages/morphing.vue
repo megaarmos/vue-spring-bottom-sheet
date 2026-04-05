@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, useTemplateRef } from 'vue'
-import BottomSheet from '@douxcode/vue-spring-bottom-sheet'
+import BottomSheet from '@opekunov/vue-spring-bottom-sheet'
 
 // --- Demo sheets ---
 const sheetDefault = useTemplateRef('sheetDefault')
@@ -13,6 +13,8 @@ const sheetShortContent = useTemplateRef('sheetShortContent')
 const sheetListMenu = useTemplateRef('sheetListMenu')
 const sheetForm = useTemplateRef('sheetForm')
 const sheetNonBlocking = useTemplateRef('sheetNonBlocking')
+const sheetCoverPhoto = useTemplateRef('sheetCoverPhoto')
+const sheetCoverGradient = useTemplateRef('sheetCoverGradient')
 
 // --- Interactive playground ---
 const sheetPlayground = useTemplateRef('sheetPlayground')
@@ -97,6 +99,16 @@ const demos = [
     description: 'Non-blocking morphing sheet with shadow.',
     ref: sheetNonBlocking,
   },
+  {
+    title: 'Cover: Photo',
+    description: 'Full-bleed background image behind content.',
+    ref: sheetCoverPhoto,
+  },
+  {
+    title: 'Cover: Gradient',
+    description: 'Decorative gradient background with cover slot.',
+    ref: sheetCoverGradient,
+  },
 ]
 </script>
 
@@ -115,7 +127,7 @@ const demos = [
           <h3 class="font-semibold text-sm">{{ demo.title }}</h3>
         </template>
         <p class="text-xs text-muted mb-3">{{ demo.description }}</p>
-        <UButton size="sm" @click="demo.ref?.open()">
+        <UButton size="sm" @click="demo.ref.value?.open()">
           Open
         </UButton>
       </UCard>
@@ -559,6 +571,108 @@ const demos = [
         <p class="text-muted text-sm">
           Swipe down to dismiss. Notice the shadow instead of backdrop overlay.
         </p>
+      </BottomSheet>
+
+      <!-- 11. Cover: Photo -->
+      <BottomSheet
+        ref="sheetCoverPhoto"
+        :blocking="true"
+        :can-swipe-close="false"
+        :expand-on-content-drag="true"
+        :snap-points="[280, '55%', '100%']"
+        :initial-snap-point="0"
+        :morphing="{
+          compactHorizontalInset: 16,
+          compactBottomInset: 16,
+          compactCornerRadius: 24,
+        }"
+        :spring-config="{ mass: 1, stiffness: 200, damping: 25 }"
+      >
+        <template #cover>
+          <div
+            style="
+              width: 100%;
+              height: 100%;
+              background: url('https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=800&q=80')
+                center / cover no-repeat;
+            "
+          />
+          <div
+            style="
+              position: absolute;
+              inset: 0;
+              background: linear-gradient(to top, rgba(0, 0, 0, 0.7) 0%, transparent 60%);
+            "
+          />
+        </template>
+        <template #header>
+          <h3 class="font-bold text-white text-lg m-0 mt-2">Mountain View</h3>
+        </template>
+        <div class="flex gap-2 mb-4">
+          <UButton size="xs" @click="sheetCoverPhoto?.snapToPoint(0)">Compact</UButton>
+          <UButton size="xs" @click="sheetCoverPhoto?.snapToPoint(1)">Expanded</UButton>
+          <UButton size="xs" @click="sheetCoverPhoto?.snapToPoint(2)">Fullscreen</UButton>
+        </div>
+        <p class="text-muted text-sm mb-2">
+          A full-bleed background photo using the cover slot.
+          The image fills the entire sheet and morphs with the container.
+        </p>
+        <p class="text-muted text-sm mb-2">
+          Header, content and footer are layered above the cover image.
+          The gradient overlay ensures text readability.
+        </p>
+        <p v-for="i in 6" :key="i" class="text-sm text-muted/70 mb-2">
+          Sed ut perspiciatis unde omnis iste natus error sit voluptatem
+          accusantium doloremque laudantium.
+        </p>
+        <template #footer>
+          <UButton variant="outline" color="neutral" block @click="sheetCoverPhoto?.close()">Close</UButton>
+        </template>
+      </BottomSheet>
+
+      <!-- 12. Cover: Gradient -->
+      <BottomSheet
+        ref="sheetCoverGradient"
+        :blocking="true"
+        :can-swipe-close="true"
+        :expand-on-content-drag="true"
+        :snap-points="[220, '50%', '100%']"
+        :initial-snap-point="0"
+        :morphing="{
+          compactHorizontalInset: 16,
+          compactBottomInset: 16,
+          compactCornerRadius: 24,
+        }"
+        :spring-config="{ mass: 1, stiffness: 200, damping: 25 }"
+      >
+        <template #cover>
+          <div
+            style="
+              width: 100%;
+              height: 100%;
+              background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            "
+          />
+        </template>
+        <template #header>
+          <h3 class="font-bold text-white text-lg m-0 mt-2">Gradient Cover</h3>
+        </template>
+        <div class="flex gap-2 mb-4">
+          <UButton size="xs" @click="sheetCoverGradient?.snapToPoint(0)">Compact</UButton>
+          <UButton size="xs" @click="sheetCoverGradient?.snapToPoint(1)">Expanded</UButton>
+          <UButton size="xs" @click="sheetCoverGradient?.snapToPoint(2)">Fullscreen</UButton>
+        </div>
+        <p class="text-white/80 text-sm mb-2">
+          A decorative gradient as the sheet background using the cover slot.
+          All content is layered on top with full readability.
+        </p>
+        <p v-for="i in 4" :key="i" class="text-sm text-white/60 mb-2">
+          Lorem ipsum dolor sit amet, consectetur adipisicing elit.
+          Pariatur ab recusandae quis nesciunt dolores.
+        </p>
+        <template #footer>
+          <UButton variant="outline" color="neutral" block @click="sheetCoverGradient?.close()">Close</UButton>
+        </template>
       </BottomSheet>
 
       <!-- Playground Sheet -->

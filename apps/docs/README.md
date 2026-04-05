@@ -226,7 +226,7 @@ All documentation includes links to:
 
 - [Live Demo](https://vue-spring-bottom-sheet.douxcode.com/)
 - [GitHub Repository](https://github.com/douxcode/vue-spring-bottom-sheet)
-- [NPM Package](https://www.npmjs.com/package/@douxcode/vue-spring-bottom-sheet)
+- [NPM Package](https://www.npmjs.com/package/@opekunov/vue-spring-bottom-sheet)
 
 ## 🎉 What's Great
 

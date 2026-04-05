@@ -13,7 +13,7 @@ export interface MorphingConfig {
   compactBottomInset?: number
   /** Corner radius in compact state (px). Default: 20 */
   compactCornerRadius?: number
-  /** Corner radius in expanded state (px). Default: 0 */
+  /** Corner radius in expanded state (px). Default: 20 */
   expandedCornerRadius?: number
   /** Corner radius in fullscreen state (px). Default: 0 */
   fullscreenCornerRadius?: number
@@ -35,6 +35,8 @@ export interface BottomSheetProps {
   headerClass?: string
   contentClass?: string
   footerClass?: string
+  sheetClass?: string
+  scrollClass?: string
   /**
    * Enable iOS 26-like morphing behavior.
    * When enabled, the sheet morphs from a floating card (compact)

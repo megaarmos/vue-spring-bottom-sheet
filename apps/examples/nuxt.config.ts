@@ -10,7 +10,7 @@ export default defineNuxtConfig({
     baseURL: process.env.NUXT_APP_BASE_URL || '/',
   },
 
-  css: ['@douxcode/vue-spring-bottom-sheet/dist/style.css', '~/assets/css/main.css'],
+  css: ['@opekunov/vue-spring-bottom-sheet/dist/style.css', '~/assets/css/main.css'],
 
   routeRules: {
     '/': { prerender: true },

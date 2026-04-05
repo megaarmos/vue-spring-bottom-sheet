@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, useTemplateRef } from 'vue'
-import BottomSheet from '@douxcode/vue-spring-bottom-sheet'
+import BottomSheet from '@opekunov/vue-spring-bottom-sheet'
 
 const bottomSheet = useTemplateRef<InstanceType<typeof BottomSheet>>('bottomSheet')
 const selectedImage = ref<{ id: number; src: string; title: string } | null>(null)

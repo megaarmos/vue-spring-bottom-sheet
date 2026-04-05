@@ -12,8 +12,8 @@ Get started with Vue Spring Bottom Sheet in minutes.
 
 ```vue
 <script setup>
-import BottomSheet from '@douxcode/vue-spring-bottom-sheet'
-import '@douxcode/vue-spring-bottom-sheet/dist/style.css'
+import BottomSheet from '@opekunov/vue-spring-bottom-sheet'
+import '@opekunov/vue-spring-bottom-sheet/dist/style.css'
 import { useTemplateRef } from 'vue'
 </script>
 ```
@@ -26,8 +26,8 @@ We recommend using `useTemplateRef` for better type safety and cleaner code. If 
 
 ```vue
 <script setup>
-import BottomSheet from '@douxcode/vue-spring-bottom-sheet'
-import '@douxcode/vue-spring-bottom-sheet/dist/style.css'
+import BottomSheet from '@opekunov/vue-spring-bottom-sheet'
+import '@opekunov/vue-spring-bottom-sheet/dist/style.css'
 import { useTemplateRef } from 'vue'
 
 const bottomSheet = useTemplateRef('bottomSheet')
@@ -38,8 +38,8 @@ const bottomSheet = useTemplateRef('bottomSheet')
 
 ```vue
 <script setup>
-import BottomSheet from '@douxcode/vue-spring-bottom-sheet'
-import '@douxcode/vue-spring-bottom-sheet/dist/style.css'
+import BottomSheet from '@opekunov/vue-spring-bottom-sheet'
+import '@opekunov/vue-spring-bottom-sheet/dist/style.css'
 import { useTemplateRef } from 'vue'
 
 const bottomSheet = useTemplateRef('bottomSheet')
@@ -67,8 +67,8 @@ const close = () => {
 
 ```vue
 <script setup>
-import BottomSheet from '@douxcode/vue-spring-bottom-sheet'
-import '@douxcode/vue-spring-bottom-sheet/dist/style.css'
+import BottomSheet from '@opekunov/vue-spring-bottom-sheet'
+import '@opekunov/vue-spring-bottom-sheet/dist/style.css'
 import { useTemplateRef } from 'vue'
 
 const bottomSheet = useTemplateRef('bottomSheet')
@@ -98,8 +98,8 @@ For TypeScript users with Vue 3.5+:
 
 ```vue
 <script setup lang="ts">
-import BottomSheet from '@douxcode/vue-spring-bottom-sheet'
-import '@douxcode/vue-spring-bottom-sheet/dist/style.css'
+import BottomSheet from '@opekunov/vue-spring-bottom-sheet'
+import '@opekunov/vue-spring-bottom-sheet/dist/style.css'
 import { useTemplateRef } from 'vue'
 
 const bottomSheet = useTemplateRef<InstanceType<typeof BottomSheet>>('bottomSheet')
@@ -125,8 +125,8 @@ If you're using Vue 3.0 to 3.4, use `ref` instead:
 
 ```vue
 <script setup lang="ts">
-import BottomSheet from '@douxcode/vue-spring-bottom-sheet'
-import '@douxcode/vue-spring-bottom-sheet/dist/style.css'
+import BottomSheet from '@opekunov/vue-spring-bottom-sheet'
+import '@opekunov/vue-spring-bottom-sheet/dist/style.css'
 import { ref } from 'vue'
 
 const bottomSheet = ref<InstanceType<typeof BottomSheet>>()
@@ -152,8 +152,8 @@ For reactive control with `v-model`:
 
 ```vue
 <script setup lang="ts">
-import BottomSheet from '@douxcode/vue-spring-bottom-sheet'
-import '@douxcode/vue-spring-bottom-sheet/dist/style.css'
+import BottomSheet from '@opekunov/vue-spring-bottom-sheet'
+import '@opekunov/vue-spring-bottom-sheet/dist/style.css'
 
 const isOpen = ref(false)
 </script>

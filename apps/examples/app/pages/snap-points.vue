@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { useTemplateRef } from 'vue'
-import BottomSheet from '@douxcode/vue-spring-bottom-sheet'
+import BottomSheet from '@opekunov/vue-spring-bottom-sheet'
 
 const bottomSheet = useTemplateRef('bottomSheet')
 const instinctHeight = ref(0)

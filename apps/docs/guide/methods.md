@@ -9,7 +9,7 @@ To use these methods, create a template ref:
 ```vue
 <script setup>
 import { useTemplateRef } from 'vue'
-import BottomSheet from '@douxcode/vue-spring-bottom-sheet'
+import BottomSheet from '@opekunov/vue-spring-bottom-sheet'
 
 const bottomSheet = useTemplateRef('bottomSheet')
 

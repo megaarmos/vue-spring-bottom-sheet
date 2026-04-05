@@ -12,8 +12,8 @@ The simplest implementation:
 
 ```vue
 <script setup>
-import BottomSheet from '@douxcode/vue-spring-bottom-sheet'
-import '@douxcode/vue-spring-bottom-sheet/dist/style.css'
+import BottomSheet from '@opekunov/vue-spring-bottom-sheet'
+import '@opekunov/vue-spring-bottom-sheet/dist/style.css'
 import { useTemplateRef } from 'vue'
 
 const bottomSheet = useTemplateRef()
@@ -308,8 +308,8 @@ Demonstrating all lifecycle events:
 ```vue
 <script setup>
 import { useTemplateRef } from 'vue'
-import BottomSheet from '@douxcode/vue-spring-bottom-sheet'
-import '@douxcode/vue-spring-bottom-sheet/dist/style.css'
+import BottomSheet from '@opekunov/vue-spring-bottom-sheet'
+import '@opekunov/vue-spring-bottom-sheet/dist/style.css'
 
 const bottomSheet = useTemplateRef('bottomSheet')
 const logs = ref([])

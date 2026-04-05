@@ -11,7 +11,7 @@
     "typecheck": "nuxt typecheck"
   },
   "dependencies": {
-    "@douxcode/vue-spring-bottom-sheet": "workspace:*",
+    "@opekunov/vue-spring-bottom-sheet": "workspace:*",
     "@iconify-json/lucide": "^1.2.89",
     "@iconify-json/simple-icons": "^1.2.70",
     "@nuxt/ui": "^4.4.0",

@@ -8,8 +8,8 @@ The most common pattern using template refs:
 
 ```vue
 <script setup>
-import BottomSheet from '@douxcode/vue-spring-bottom-sheet'
-import '@douxcode/vue-spring-bottom-sheet/dist/style.css'
+import BottomSheet from '@opekunov/vue-spring-bottom-sheet'
+import '@opekunov/vue-spring-bottom-sheet/dist/style.css'
 import { useTemplateRef } from 'vue'
 
 const bottomSheet = useTemplateRef('bottomSheet')
@@ -35,8 +35,8 @@ For reactive state management:
 
 ```vue
 <script setup>
-import BottomSheet from '@douxcode/vue-spring-bottom-sheet'
-import '@douxcode/vue-spring-bottom-sheet/dist/style.css'
+import BottomSheet from '@opekunov/vue-spring-bottom-sheet'
+import '@opekunov/vue-spring-bottom-sheet/dist/style.css'
 
 const isOpen = ref(false)
 </script>
@@ -262,8 +262,8 @@ Wrap the component in `<ClientOnly>` for SSR compatibility:
 
 ```vue
 <script setup>
-import BottomSheet from '@douxcode/vue-spring-bottom-sheet'
-import '@douxcode/vue-spring-bottom-sheet/dist/style.css'
+import BottomSheet from '@opekunov/vue-spring-bottom-sheet'
+import '@opekunov/vue-spring-bottom-sheet/dist/style.css'
 import { useTemplateRef } from 'vue'
 
 const bottomSheet = useTemplateRef('bottomSheet')

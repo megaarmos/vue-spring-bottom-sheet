@@ -490,15 +490,20 @@ defineExpose({ open, close, snapToPoint })
         v-show="showSheet"
         ref="sheet"
         :style="sheetStyle"
+        :class="sheetClass"
         :data-vsbs-shadow="!blocking"
         :data-vsbs-sheet-show="showSheet"
         :data-vsbs-morphing="morphingEnabled || undefined"
+        :data-vsbs-has-cover="$slots.cover ? '' : undefined"
         aria-modal="true"
         data-vsbs-sheet
         tabindex="-1"
         @touchstart="scrollLock.touchStartHandler"
         @touchend="scrollLock.touchEndHandler"
       >
+        <div v-if="$slots.cover" data-vsbs-cover>
+          <slot name="cover" />
+        </div>
         <div
           ref="sheetHeader"
           data-vsbs-header
@@ -513,6 +518,7 @@ defineExpose({ open, close, snapToPoint })
         <div
           ref="sheetScroll"
           data-vsbs-scroll
+          :class="scrollClass"
           @touchstart="handleTouchStart"
           @touchmove="handleSheetScroll"
           @pointerdown="handleContentPointerDown"
@@ -538,130 +544,151 @@ defineExpose({ open, close, snapToPoint })
   </Teleport>
 </template>
 
-<style scoped>
-[data-vsbs-backdrop] {
-  background-color: var(--vsbs-backdrop-bg, rgba(0, 0, 0, 0.5));
-  inset: 0;
-  pointer-events: auto;
-  position: fixed;
-  user-select: none;
-  will-change: opacity;
+<style>
+@layer vsbs {
+  [data-vsbs-backdrop] {
+    background-color: var(--vsbs-backdrop-bg, rgba(0, 0, 0, 0.5));
+    inset: 0;
+    pointer-events: auto;
+    position: fixed;
+    user-select: none;
+    will-change: opacity;
 
-  --vsbs-duration: v-bind(durationCss);
-}
+    --vsbs-duration: v-bind(durationCss);
+  }
 
-[data-vsbs-shadow='true']::before {
-  content: '';
-  z-index: -1;
-  position: absolute;
-  top: 0;
-  height: 100lvh;
-  width: 100%;
-  border-radius: var(--vsbs-border-radius, 16px);
-  box-shadow: 0 -5px 60px 0 var(--vsbs-shadow-color, rgba(89, 89, 89, 0.2));
-}
+  [data-vsbs-shadow='true']::before {
+    content: '';
+    z-index: -1;
+    position: absolute;
+    top: 0;
+    height: 100lvh;
+    width: 100%;
+    border-radius: var(--vsbs-border-radius, 16px);
+    box-shadow: 0 -5px 60px 0 var(--vsbs-shadow-color, rgba(89, 89, 89, 0.2));
+  }
 
-[data-vsbs-sheet] {
-  background-color: var(--vsbs-background, #fff);
-  box-sizing: border-box;
-  border-top-left-radius: var(--vsbs-border-radius, 16px);
-  border-top-right-radius: var(--vsbs-border-radius, 16px);
+  [data-vsbs-sheet] {
+    background-color: var(--vsbs-background, #fff);
+    box-sizing: border-box;
+    border-top-left-radius: var(--vsbs-border-radius, 16px);
+    border-top-right-radius: var(--vsbs-border-radius, 16px);
 
-  border-right: 1px solid var(--vsbs-outer-border-color, transparent);
-  border-left: 1px solid var(--vsbs-outer-border-color, transparent);
+    border-right: 1px solid var(--vsbs-outer-border-color, transparent);
+    border-left: 1px solid var(--vsbs-outer-border-color, transparent);
 
-  bottom: 0;
-  display: flex;
-  flex-direction: column;
-  left: 0;
-  margin-left: auto;
-  margin-right: auto;
-  max-width: var(--vsbs-max-width, 640px);
-  pointer-events: all;
-  position: fixed;
-  right: 0;
-  width: 100%;
-  will-change: height, transform;
-}
+    bottom: 0;
+    display: flex;
+    flex-direction: column;
+    left: 0;
+    margin-left: auto;
+    margin-right: auto;
+    max-width: var(--vsbs-max-width, 640px);
+    pointer-events: all;
+    position: fixed;
+    right: 0;
+    width: 100%;
+    will-change: height, transform;
+  }
 
-/* Morphing mode overrides */
-[data-vsbs-morphing] {
-  max-width: none;
-  overflow: hidden;
-  will-change: height, transform, border-radius, left, right, bottom;
-  box-shadow: 0 -2px 20px 0 var(--vsbs-shadow-color, rgba(0, 0, 0, 0.12)),
-    0 0 40px 0 var(--vsbs-shadow-color, rgba(0, 0, 0, 0.06));
-}
+  /* Morphing mode overrides */
+  [data-vsbs-morphing] {
+    max-width: none;
+    overflow: hidden;
+    will-change: height, transform, border-radius, left, right, bottom;
+    box-shadow: 0 -2px 20px 0 var(--vsbs-shadow-color, rgba(0, 0, 0, 0.12)),
+      0 0 40px 0 var(--vsbs-shadow-color, rgba(0, 0, 0, 0.06));
+  }
 
-[data-vsbs-sheet-show='true'] {
-  visibility: visible;
-}
+  /* Clip cover content when cover slot is used */
+  [data-vsbs-has-cover] {
+    overflow: hidden;
+  }
 
-[data-vsbs-header] {
-  touch-action: none;
+  [data-vsbs-sheet-show='true'] {
+    visibility: visible;
+  }
 
-  box-shadow: 0 1px 0 var(--vsbs-border-color, rgba(46, 59, 66, 0.125));
-  flex-shrink: 0;
-  padding: 20px var(--vsbs-padding-x, 16px) 8px;
-  user-select: none;
-  z-index: 3;
+  /* Cover slot: full-bleed background behind header/content/footer */
+  [data-vsbs-cover] {
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    pointer-events: none;
+    overflow: hidden;
+  }
 
-  border-top-left-radius: var(--vsbs-border-radius, 16px);
-  border-top-right-radius: var(--vsbs-border-radius, 16px);
+  [data-vsbs-header] {
+    touch-action: none;
 
-  border-top: 1px solid var(--vsbs-outer-border-color, transparent);
-}
+    box-shadow: 0 1px 0 var(--vsbs-border-color, rgba(46, 59, 66, 0.125));
+    flex-shrink: 0;
+    padding: var(--vsbs-header-padding, 20px var(--vsbs-padding-x, 16px) 8px);
+    user-select: none;
+    position: relative;
+    z-index: 3;
 
-[data-vsbs-header]:before {
-  background-color: var(--vsbs-handle-background, rgba(0, 0, 0, 0.28));
-  border-radius: 2px;
-  content: '';
-  display: block;
-  height: 4px;
-  left: 50%;
-  position: absolute;
-  top: 8px;
-  transform: translateX(-50%);
-  width: 36px;
-}
+    border-top-left-radius: var(--vsbs-border-radius, 16px);
+    border-top-right-radius: var(--vsbs-border-radius, 16px);
 
-[data-vsbs-header]:empty {
-  box-shadow: none;
-  padding: 14px var(--vsbs-padding-x, 16px) 10px;
-}
+    border-top: 1px solid var(--vsbs-outer-border-color, transparent);
+  }
 
-[data-vsbs-footer] {
-  touch-action: none;
-  box-shadow: 0 -1px 0 var(--vsbs-border-color, rgba(46, 59, 66, 0.125));
-  flex-grow: 0;
-  flex-shrink: 0;
-  padding: 16px var(--vsbs-padding-x, 16px);
-  user-select: none;
-}
+  [data-vsbs-header]::before {
+    background-color: var(--vsbs-handle-background, rgba(0, 0, 0, 0.28));
+    border-radius: var(--vsbs-handle-radius, 2px);
+    content: '';
+    display: block;
+    height: var(--vsbs-handle-height, 4px);
+    left: 50%;
+    position: absolute;
+    top: var(--vsbs-handle-top, 8px);
+    transform: translateX(-50%);
+    width: var(--vsbs-handle-width, 36px);
+  }
 
-[data-vsbs-footer]:empty {
-  display: none;
-}
+  [data-vsbs-header]:empty {
+    box-shadow: none;
+    padding: var(--vsbs-header-empty-padding, 14px var(--vsbs-padding-x, 16px) 10px);
+  }
 
-[data-vsbs-scroll] {
-  flex-grow: 1;
-  overflow-y: auto;
-  overscroll-behavior: none;
-}
+  [data-vsbs-footer] {
+    touch-action: none;
+    box-shadow: 0 -1px 0 var(--vsbs-border-color, rgba(46, 59, 66, 0.125));
+    flex-grow: 0;
+    flex-shrink: 0;
+    padding: var(--vsbs-footer-padding, 16px var(--vsbs-padding-x, 16px));
+    position: relative;
+    user-select: none;
+    z-index: 1;
+  }
 
-[data-vsbs-content] {
-  display: grid;
-  padding: 8px var(--vsbs-padding-x, 16px);
-  user-select: none;
-}
+  [data-vsbs-footer]:empty {
+    display: none;
+  }
 
-.vsbs-backdrop-enter-active,
-.vsbs-backdrop-leave-active {
-  transition: opacity var(--vsbs-duration) ease;
-}
+  [data-vsbs-scroll] {
+    flex-grow: 1;
+    overflow-y: auto;
+    overscroll-behavior: none;
+    position: relative;
+    z-index: 1;
+  }
 
-.vsbs-backdrop-enter-from,
-.vsbs-backdrop-leave-to {
-  opacity: 0;
+  [data-vsbs-content] {
+    display: var(--vsbs-content-display, grid);
+    padding: var(--vsbs-content-padding, 8px var(--vsbs-padding-x, 16px));
+    user-select: none;
+  }
+
+  .vsbs-backdrop-enter-active,
+  .vsbs-backdrop-leave-active {
+    transition: opacity var(--vsbs-duration) ease;
+  }
+
+  .vsbs-backdrop-enter-from,
+  .vsbs-backdrop-leave-to {
+    opacity: 0;
+  }
 }
 </style>

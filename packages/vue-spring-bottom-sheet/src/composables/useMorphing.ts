@@ -17,7 +17,7 @@ const DEFAULT_MORPHING_CONFIG: MorphingConfig = {
   compactHorizontalInset: 16,
   compactBottomInset: 16,
   compactCornerRadius: 20,
-  expandedCornerRadius: 0,
+  expandedCornerRadius: 20,
   fullscreenCornerRadius: 0,
 }
 
@@ -84,22 +84,31 @@ export function useMorphing(
     return lerp(cfg.compactBottomInset, 0, compactToExpanded)
   })
 
-  const cornerRadius = computed(() => {
+  const topCornerRadius = computed(() => {
     const { compactToExpanded, expandedToFullscreen } = morphProgress.value
     const radiusAfterExpand = lerp(cfg.compactCornerRadius, cfg.expandedCornerRadius, compactToExpanded)
     return lerp(radiusAfterExpand, cfg.fullscreenCornerRadius, expandedToFullscreen)
   })
 
+  const bottomCornerRadius = computed(() => {
+    const { compactToExpanded } = morphProgress.value
+    return lerp(cfg.compactCornerRadius, 0, compactToExpanded)
+  })
+
+  // Backward compat alias — exposes the top corner radius
+  const cornerRadius = topCornerRadius
+
   const morphStyle = computed<CSSProperties>(() => {
     const hInset = horizontalInset.value
     const bInset = bottomInset.value
-    const radius = cornerRadius.value
+    const tR = topCornerRadius.value
+    const bR = bottomCornerRadius.value
 
     return {
       left: `${hInset}px`,
       right: `${hInset}px`,
       bottom: `${bInset}px`,
-      borderRadius: `${radius}px ${radius}px ${radius > 0 ? radius : 0}px ${radius > 0 ? radius : 0}px`,
+      borderRadius: `${tR}px ${tR}px ${bR}px ${bR}px`,
     }
   })
 

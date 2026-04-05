@@ -9,19 +9,19 @@ Install the package using your preferred package manager:
 :::code-group
 
 ```sh [npm]
-npm install @douxcode/vue-spring-bottom-sheet
+npm install @opekunov/vue-spring-bottom-sheet
 ```
 
 ```sh [yarn]
-yarn add @douxcode/vue-spring-bottom-sheet
+yarn add @opekunov/vue-spring-bottom-sheet
 ```
 
 ```sh [pnpm]
-pnpm add @douxcode/vue-spring-bottom-sheet
+pnpm add @opekunov/vue-spring-bottom-sheet
 ```
 
 ```sh [bun]
-bun add @douxcode/vue-spring-bottom-sheet
+bun add @opekunov/vue-spring-bottom-sheet
 ```
 
 :::
@@ -34,8 +34,8 @@ Since Bottom Sheet relies on browser APIs, wrap it in `<ClientOnly>` for SSR com
 
 ```vue
 <script setup>
-import BottomSheet from '@douxcode/vue-spring-bottom-sheet'
-import '@douxcode/vue-spring-bottom-sheet/dist/style.css'
+import BottomSheet from '@opekunov/vue-spring-bottom-sheet'
+import '@opekunov/vue-spring-bottom-sheet/dist/style.css'
 import { useTemplateRef } from 'vue'
 
 const bottomSheet = useTemplateRef('bottomSheet')
@@ -67,8 +67,8 @@ For easier usage across your app, create a Nuxt plugin:
 
 ```ts
 // plugins/bottom-sheet.client.ts
-import BottomSheet from '@douxcode/vue-spring-bottom-sheet'
-import '@douxcode/vue-spring-bottom-sheet/dist/style.css'
+import BottomSheet from '@opekunov/vue-spring-bottom-sheet'
+import '@opekunov/vue-spring-bottom-sheet/dist/style.css'
 
 export default defineNuxtPlugin((nuxtApp) => {
   nuxtApp.vueApp.component('BottomSheet', BottomSheet)
