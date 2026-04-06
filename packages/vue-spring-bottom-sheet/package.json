@@ -50,6 +50,8 @@
     "build": "vite build",
     "dev": "vite build --watch",
     "type-check": "vue-tsc --build",
+    "test": "vitest run",
+    "test:watch": "vitest",
     "format": "prettier --write src/",
     "release": "cp ../../README.md . && bun run build && bun run type-check && npm publish --access public",
     "prepublishOnly": "cp ../../README.md . && bun run build && bun run type-check"
@@ -69,14 +71,17 @@
     "@vitejs/plugin-vue": "^6.0.3",
     "@vue/eslint-config-prettier": "^10.2.0",
     "@vue/eslint-config-typescript": "^14.6.0",
+    "@vue/test-utils": "^2.4.6",
     "@vue/tsconfig": "^0.8.1",
     "ajv": "^8.17.1",
     "eslint": "^9.39.2",
     "eslint-plugin-vue": "^10.6.2",
+    "happy-dom": "^20.8.9",
     "prettier": "^3.7.4",
     "typescript": "~5.9.3",
     "vite": "^7.3.1",
     "vite-plugin-dts": "4.5.4",
+    "vitest": "^4.1.2",
     "vue-tsc": "^3.2.2"
   },
   "files": [

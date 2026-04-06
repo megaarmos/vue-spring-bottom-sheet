@@ -151,6 +151,7 @@ const focusManagement = useFocusManagement({
 
 const isOpening = shallowRef(false)
 const isClosing = shallowRef(false)
+let closeTimeoutId: ReturnType<typeof setTimeout> | null = null
 
 const backdropClick = () => {
   if (props.canBackdropClose) close()
@@ -185,6 +186,16 @@ const setupKeyboardAvoidance = () => {
 
 const open = async () => {
   if (isOpening.value) return
+
+  // Abort any in-progress close animation
+  if (isClosing.value) {
+    isClosing.value = false
+    translateYSpring.cancel()
+    if (closeTimeoutId !== null) {
+      clearTimeout(closeTimeoutId)
+      closeTimeoutId = null
+    }
+  }
 
   showSheet.value = true
   isOpening.value = true
@@ -286,7 +297,8 @@ const close = () => {
   } else {
     translateY.value = height.value
 
-    setTimeout(() => {
+    closeTimeoutId = setTimeout(() => {
+      closeTimeoutId = null
       emit('closed')
       isClosing.value = false
     }, props.duration)
@@ -401,6 +413,10 @@ onUnmounted(() => {
   focusManagement.cleanup()
   heightSpring.cancel()
   translateYSpring.cancel()
+  if (closeTimeoutId !== null) {
+    clearTimeout(closeTimeoutId)
+    closeTimeoutId = null
+  }
 })
 
 // CSS transition (only used when spring animation is disabled)
