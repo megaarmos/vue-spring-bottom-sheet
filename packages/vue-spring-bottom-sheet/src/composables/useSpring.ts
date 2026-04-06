@@ -90,6 +90,7 @@ export function useSpring(
    */
   function sync() {
     velocity = 0
+    springTarget = target.value
   }
 
   /**

@@ -1,19 +1,8 @@
+import type { MorphingConfig } from '../types'
+
 import { computed, type CSSProperties, type Ref } from 'vue'
 
-export interface MorphingConfig {
-  /** Horizontal inset in compact state (px). Default: 16 */
-  compactHorizontalInset: number
-  /** Bottom inset in compact state (px). Default: 16 */
-  compactBottomInset: number
-  /** Corner radius in compact state (px). Default: 20 */
-  compactCornerRadius: number
-  /** Corner radius in expanded state (px). Default: 0 */
-  expandedCornerRadius: number
-  /** Corner radius in fullscreen state (px). Default: 0 */
-  fullscreenCornerRadius: number
-}
-
-const DEFAULT_MORPHING_CONFIG: MorphingConfig = {
+const DEFAULT_MORPHING_CONFIG: Required<MorphingConfig> = {
   compactHorizontalInset: 16,
   compactBottomInset: 16,
   compactCornerRadius: 20,
@@ -33,24 +22,28 @@ function clamp01(v: number): number {
  * Computes morphing container styles based on the current sheet height
  * and the defined snap points for compact / expanded / fullscreen states.
  *
- * The snap points array must have exactly 3 entries (sorted ascending by resolved pixel height):
- *   [compact, expanded, fullscreen]
+ * Snap points (sorted ascending by resolved pixel height):
+ *   - 0–1 entries: no morphing (returns zero progress)
+ *   - 2 entries: interpolates compact→expanded only
+ *   - 3+ entries: uses first 3 as [compact, expanded, fullscreen]
  *
  * Between compact→expanded:
  *   - horizontalInset interpolates from compactHorizontalInset → 0
  *   - bottomInset interpolates from compactBottomInset → 0
- *   - cornerRadius interpolates from compactCornerRadius → expandedCornerRadius
+ *   - topCornerRadius interpolates from compactCornerRadius → expandedCornerRadius
+ *   - bottomCornerRadius interpolates from compactCornerRadius → 0
  *
  * Between expanded→fullscreen:
  *   - insets stay at 0
- *   - cornerRadius interpolates from expandedCornerRadius → fullscreenCornerRadius
+ *   - topCornerRadius interpolates from expandedCornerRadius → fullscreenCornerRadius
+ *   - bottomCornerRadius stays at 0
  */
 export function useMorphing(
   currentHeight: Ref<number>,
   sortedSnapHeights: Ref<number[]>,
   config: Partial<MorphingConfig> = {},
 ) {
-  const cfg: MorphingConfig = { ...DEFAULT_MORPHING_CONFIG, ...config }
+  const cfg: Required<MorphingConfig> = { ...DEFAULT_MORPHING_CONFIG, ...config }
 
   const morphProgress = computed(() => {
     const snaps = sortedSnapHeights.value
@@ -60,7 +53,7 @@ export function useMorphing(
 
     const h = currentHeight.value
     const compact = snaps[0]!
-    const expanded = snaps.length >= 3 ? snaps[1]! : snaps[1]!
+    const expanded = snaps[1]!
     const fullscreen = snaps.length >= 3 ? snaps[2]! : snaps[1]!
 
     const compactToExpanded =
